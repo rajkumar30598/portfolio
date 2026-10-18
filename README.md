@@ -1,73 +1,69 @@
-# React + TypeScript + Vite
+# Rajkumar V – Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Personal portfolio site for a front-end developer, built with React, TypeScript, Vite and Tailwind CSS, with scroll-driven animations powered by GSAP.
 
-Currently, two official plugins are available:
+**Live site:** https://rajkumarv-portfolio.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Single-page layout** with sections: Hero, About, Experience, Projects and Contact, plus a Navigation bar and Footer
+- **GSAP + ScrollTrigger animations**: character-by-character hero entrance, parallax effects, an animated experience timeline, and staggered reveals for skills and project cards
+- **Reduced-motion support**: animations are skipped when the user prefers reduced motion
+- **Responsive navigation** with a mobile menu toggle
+- **Skills grid** (JavaScript, TypeScript, Angular, React, RxJS, Redux, Tailwind, WebSocket, Firebase and more)
+- **Projects showcase** with four featured project cards and images
+- **Contact form** with toast feedback via Sonner (submission is currently simulated client-side; no backend is wired up)
+- **UI primitives** from shadcn/ui (Radix UI + Tailwind), with an `@/` path alias to `src/`
 
-## Expanding the ESLint configuration
+## Project structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── App.tsx               # registers ScrollTrigger and composes the sections
+├── sections/             # Navigation, Hero, About, Experience, Projects, Contact, Footer
+├── components/
+│   ├── AnimatedText.tsx  # reusable animated text helpers
+│   └── ui/               # shadcn/ui components
+├── hooks/                # useScrollProgress, use-mobile
+└── lib/utils.ts
+public/images/            # profile and project images
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Package | Version |
+| --- | --- |
+| React / React DOM | ^19.2.0 |
+| TypeScript | ~5.9.3 |
+| Vite | ^7.2.4 |
+| Tailwind CSS | ^3.4.19 |
+| GSAP (+ @gsap/react) | ^3.14.2 |
+| Radix UI / shadcn/ui | various |
+| lucide-react (icons) | ^0.562.0 |
+| Sonner (toasts) | ^2.0.7 |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Getting started
+
+Requires Node.js 20.19+ (needed by Vite 7).
+
+```bash
+git clone https://github.com/rajkumar30598/portfolio.git
+cd portfolio
+npm install
+npm run dev        # http://localhost:5173
 ```
+
+Other scripts:
+
+```bash
+npm run build      # type-check (tsc -b) and build to dist/
+npm run preview    # serve the production build locally
+npm run lint       # ESLint
+```
+
+## Deployment
+
+The site is deployed on Vercel. `vite.config.ts` uses `base: './'`, so the build output in `dist/` can also be served from any static host.
