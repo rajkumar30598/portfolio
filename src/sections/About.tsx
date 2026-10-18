@@ -174,7 +174,8 @@ export function About() {
           <div ref={contentRef} className="space-y-6 min-w-0">
             <p className="text-lg text-white/70 leading-relaxed">
               I'm a Frontend Developer with 4+ years of experience crafting scalable web applications. My journey began with a curiosity for how things work on the web, which evolved into a career building real-time systems at{' '}
-              <span className="text-[#d3e97a]">Ninjacart</span>.
+              <span className="text-[#d3e97a]">Ninjacart</span> and now reusable component libraries and design systems at{' '}
+              <span className="text-[#d3e97a]">Neutrinos</span>.
             </p>
             <p className="text-lg text-white/70 leading-relaxed">
               I specialize in <span className="text-white">Angular</span> and{' '}
