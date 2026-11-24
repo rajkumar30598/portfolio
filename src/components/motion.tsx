@@ -504,20 +504,28 @@ export function BandMarquee({ items }: { items: string[] }) {
     };
   }, []);
   const row = [...items, ...items, ...items, ...items];
-  const band = (ref: React.RefObject<HTMLDivElement | null>, cls: string) => (
-    <div ref={ref} className={`flex w-max items-center gap-8 py-4 sm:gap-12 sm:py-5 ${cls}`}>
+  const band = (ref: React.RefObject<HTMLDivElement | null>, dim: boolean) => (
+    <div ref={ref} className="flex w-max items-center gap-10 py-5 sm:gap-14 sm:py-6">
       {row.map((t, i) => (
-        <span key={i} className="flex items-center gap-8 whitespace-nowrap font-display text-3xl font-bold uppercase sm:gap-12 sm:text-5xl">
+        <span
+          key={i}
+          className={`flex items-center gap-10 whitespace-nowrap font-display text-3xl font-bold tracking-tight sm:gap-14 sm:text-5xl ${
+            dim ? 'text-white/20' : 'text-white'
+          }`}
+        >
           {t}
-          <span className="text-[0.6em]">✦</span>
+          <span className={`text-[0.45em] ${dim ? 'text-white/20' : 'text-brand'}`}>✦</span>
         </span>
       ))}
     </div>
   );
   return (
-    <div className="relative z-10 overflow-hidden py-16 sm:py-20" aria-hidden="true">
-      <div className="-rotate-[2.5deg] scale-110 bg-brand text-white">{band(a, '')}</div>
-      <div className="-mt-[2.4rem] rotate-[2deg] scale-110 bg-white text-ink sm:-mt-[3.2rem]">{band(b, '')}</div>
+    <div
+      className="relative z-10 border-y border-white/10 py-4 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)] sm:py-6"
+      aria-hidden="true"
+    >
+      <div className="overflow-hidden">{band(a, false)}</div>
+      <div className="overflow-hidden">{band(b, true)}</div>
     </div>
   );
 }

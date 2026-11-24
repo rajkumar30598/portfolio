@@ -63,7 +63,9 @@ export function About() {
 
   return (
     <section id="about" ref={sectionRef} className="relative">
-      <BandMarquee items={stack} />
+      <div className="py-16 sm:py-24">
+        <BandMarquee items={stack} />
+      </div>
 
       <div className="relative z-10 rounded-[2.5rem] bg-paper text-white sm:rounded-[3.5rem]">
         <div className="mx-auto max-w-[1600px] px-5 pb-24 pt-20 sm:px-8 lg:px-12 lg:pb-32 lg:pt-28">
@@ -71,7 +73,7 @@ export function About() {
 
           <ScrubText
             text="I'm Rajkumar, a frontend engineer in Bangalore. For 4+ years I've built *real-time* trading systems, *design systems* used across products, and *apps* people install on their phones."
-            className="max-w-6xl font-display text-[2rem] font-semibold leading-[1.08] sm:text-5xl lg:text-[4.6rem]"
+            className="max-w-5xl font-display text-[1.75rem] font-semibold leading-[1.15] sm:text-4xl sm:leading-[1.15] lg:text-[3.4rem] lg:leading-[1.12]"
           />
 
           <div className="mt-16 grid gap-10 lg:mt-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
