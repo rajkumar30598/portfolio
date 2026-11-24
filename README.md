@@ -14,7 +14,7 @@ Personal portfolio site for a front-end developer, built with React, TypeScript,
 - **Reduced-motion support**: animations are skipped when the user prefers reduced motion
 - **Responsive navigation** with a mobile menu toggle
 - **Skills grid** (JavaScript, TypeScript, Angular, React, RxJS, Redux, Tailwind, WebSocket, Firebase and more)
-- **Projects showcase** with four featured project cards and images
+- **Projects showcase** with seven project cards: three shipped personal apps (Rookwise, AdFree Tube, PDF Toolkit) with live links, plus four earlier projects
 - **Contact form** with toast feedback via Sonner (submission is currently simulated client-side; no backend is wired up)
 - **UI primitives** from shadcn/ui (Radix UI + Tailwind), with an `@/` path alias to `src/`
 

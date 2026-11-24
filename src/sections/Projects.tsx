@@ -6,9 +6,73 @@ import { ExternalLink, Github, ArrowRight } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const projects = [
+type Project = {
+  id: number;
+  title: string;
+  company: string;
+  description: string;
+  image: string;
+  tech: string[];
+  features: string[];
+  liveUrl?: string;
+  liveLabel?: string;
+  codeUrl?: string;
+};
+
+const projects: Project[] = [
   {
     id: 1,
+    title: 'Rookwise – Chess Coach',
+    company: 'Personal App · Android',
+    description:
+      'A free, ad-free pocket chess coach: on-device Stockfish game review, puzzles built from your own mistakes, 44 interactive lessons and board scanning.',
+    image: '/images/rookwise.jpg',
+    tech: ['React Native', 'Expo', 'TypeScript', 'Zustand', 'Stockfish', 'TFLite'],
+    features: [
+      'Every move rated Brilliant to Blunder, with accuracy and key moments',
+      'Your mistakes become spaced-repetition puzzles',
+      'Native engine module and on-device board recognition',
+      'Imports Lichess and Chess.com games, works offline',
+    ],
+    liveUrl: 'https://rajkumar30598.github.io/rookwise-site/',
+    liveLabel: 'Visit Site',
+  },
+  {
+    id: 2,
+    title: 'AdFree Tube',
+    company: 'Personal App · Android',
+    description:
+      'An ad-free YouTube client with a native player, offline downloads, background play, PiP, SponsorBlock and a full music mode with synced lyrics.',
+    image: '/images/adfree-tube.jpg',
+    tech: ['React Native', 'Expo', 'TypeScript', 'Firebase', 'YouTube Data API'],
+    features: [
+      'Native player with HD/4K, captions, chapters and most-replayed graph',
+      'Offline video/audio downloads, queue and background play',
+      'Optional Google sign-in to sync subscriptions and playlists',
+      'Remote config for hotfixes without an app update',
+    ],
+    liveUrl: 'https://rajkumar30598.github.io/Adfree-tube-landing/',
+    liveLabel: 'Download APK',
+  },
+  {
+    id: 3,
+    title: 'PDF Toolkit',
+    company: 'Personal Web App',
+    description:
+      '45+ PDF tools – edit, merge, split, convert, OCR – running 100% in the browser, plus AI chat with your PDF using your own Claude, ChatGPT or Gemini key.',
+    image: '/images/pdf-toolkit.jpg',
+    tech: ['Next.js', 'TypeScript', 'pdf-lib', 'PDF.js', 'AI SDKs'],
+    features: [
+      'Files never leave the device: processing is fully client-side',
+      'Bring-your-own-key AI chat, summaries, flashcards and translation',
+      'Single tool registry drives the homepage, menus and SEO pages',
+      'Installable PWA with share-target support',
+    ],
+    liveUrl: 'https://pdfeditdesk.com',
+    liveLabel: 'Visit Site',
+  },
+  {
+    id: 4,
     title: 'Internal Admin Dashboard',
     company: 'Ninjacart',
     description:
@@ -23,7 +87,7 @@ const projects = [
     ],
   },
   {
-    id: 2,
+    id: 5,
     title: 'Snippets - Global Trade News',
     company: 'Ninjacart',
     description:
@@ -38,7 +102,7 @@ const projects = [
     ],
   },
   {
-    id: 3,
+    id: 6,
     title: 'Ecommerce Platform',
     company: 'Personal Project',
     description:
@@ -53,7 +117,7 @@ const projects = [
     ],
   },
   {
-    id: 4,
+    id: 7,
     title: 'Theatre Management System',
     company: 'Personal Project',
     description:
@@ -247,26 +311,32 @@ export function Projects() {
                 </ul>
 
                 {/* Actions */}
+                {(project.liveUrl || project.codeUrl) && (
                 <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    disabled
-                    className="flex items-center gap-2 text-[#d3e97a]/70 text-sm font-medium cursor-not-allowed opacity-80"
-                    aria-disabled="true"
-                  >
-                    View Project
-                    <ExternalLink size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    disabled
-                    className="flex items-center gap-2 text-white/40 text-sm cursor-not-allowed opacity-80"
-                    aria-disabled="true"
-                  >
-                    <Github size={14} />
-                    Code
-                  </button>
+                  {project.liveUrl && (
+                    <a
+                      href={project.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-[#d3e97a] text-sm font-medium hover:underline underline-offset-4"
+                    >
+                      {project.liveLabel ?? 'View Project'}
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                  {project.codeUrl && (
+                    <a
+                      href={project.codeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-white/60 text-sm hover:text-white transition-colors"
+                    >
+                      <Github size={14} />
+                      Code
+                    </a>
+                  )}
                 </div>
+                )}
               </div>
             </div>
           ))}
