@@ -82,7 +82,7 @@ export function Footer() {
   return (
     <footer
       ref={footerRef}
-      className="relative overflow-hidden border-t border-white/10 bg-[#0b0b0d]/70 py-10 backdrop-blur-xl sm:py-14 lg:py-16"
+      className="relative overflow-hidden border-t border-white/10 bg-ink/70 py-10 backdrop-blur-xl sm:py-14 lg:py-16"
     >
       <div
         ref={contentRef}
@@ -97,7 +97,7 @@ export function Footer() {
                 e.preventDefault();
                 scrollToSection('#home');
               }}
-              className="font-display text-3xl text-white hover:text-[#d3e97a] transition-colors inline-block mb-4"
+              className="font-display text-3xl text-white hover:text-brand transition-colors inline-block mb-4"
             >
               Rajkumar V
             </a>
@@ -119,7 +119,7 @@ export function Footer() {
                       e.preventDefault();
                       scrollToSection(link.href);
                     }}
-                    className="text-white/50 hover:text-[#d3e97a] hover:translate-x-1 transition-all inline-flex items-center gap-2 text-sm"
+                    className="text-white/50 hover:text-brand hover:translate-x-1 transition-all inline-flex items-center gap-2 text-sm"
                   >
                     {link.label}
                   </a>
@@ -138,7 +138,7 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-[#d3e97a] hover:text-[#161616] hover:border-[#d3e97a] hover:scale-110 hover:rotate-6 transition-all duration-300"
+                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-brand hover:text-ink hover:border-brand hover:scale-110 hover:rotate-6 transition-all duration-300"
                   aria-label={social.label}
                 >
                   <social.icon size={18} />
@@ -163,7 +163,7 @@ export function Footer() {
         <div className="footer-animate flex flex-col sm:flex-row items-center justify-between gap-4 text-white/40 text-sm">
           <p>© {new Date().getFullYear()} Rajkumar V. All rights reserved.</p>
           <p className="flex items-center gap-1">
-            Made with <Heart size={14} className="text-[#d3e97a] fill-[#d3e97a]" /> in Bangalore
+            Made with <Heart size={14} className="text-brand fill-brand" /> in Bangalore
           </p>
         </div>
       </div>

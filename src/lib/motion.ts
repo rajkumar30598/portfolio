@@ -16,6 +16,8 @@ export const motion = {
   velocity: 0,
   /** pointer in normalised device coords (-1..1) */
   pointer: { x: 0, y: 0 },
+  /** 0..1, set to 1 on a click in empty space; the scene ripples and decays it */
+  pulse: 0,
 };
 
 let lenis: Lenis | null = null;
@@ -35,6 +37,11 @@ export function initSmoothScroll() {
     motion.pointer.y = -((e.clientY / window.innerHeight) * 2 - 1);
   };
   window.addEventListener('pointermove', onPointer, { passive: true });
+  const onDown = (e: PointerEvent) => {
+    const el = e.target as HTMLElement;
+    if (!el.closest('a, button, input, textarea, label, select, [data-cursor]')) motion.pulse = 1;
+  };
+  window.addEventListener('pointerdown', onDown, { passive: true });
 
   if (prefersReducedMotion()) {
     window.addEventListener('scroll', updateProgress, { passive: true });
@@ -42,6 +49,7 @@ export function initSmoothScroll() {
     return () => {
       window.removeEventListener('scroll', updateProgress);
       window.removeEventListener('pointermove', onPointer);
+      window.removeEventListener('pointerdown', onDown);
     };
   }
 
@@ -61,6 +69,7 @@ export function initSmoothScroll() {
     lenis?.destroy();
     lenis = null;
     window.removeEventListener('pointermove', onPointer);
+    window.removeEventListener('pointerdown', onDown);
   };
 }
 

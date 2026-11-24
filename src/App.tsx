@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Toaster } from '@/components/ui/sonner';
 import { Cursor, Preloader, ScrollProgress } from '@/components/motion';
+import { useSpotlight } from '@/hooks/useSpotlight';
 import { initSmoothScroll } from '@/lib/motion';
 import { Navigation } from './sections/Navigation';
 import { Hero } from './sections/Hero';
@@ -17,6 +18,7 @@ const BackgroundScene = lazy(() => import('./three/BackgroundScene'));
 
 function App() {
   const [ready, setReady] = useState(false);
+  useSpotlight();
 
   useEffect(() => {
     const cleanup = initSmoothScroll();
@@ -31,7 +33,7 @@ function App() {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[#0b0b0d] text-white">
+    <div className="relative min-h-screen overflow-x-clip bg-ink text-white">
       <Suspense fallback={null}>
         <BackgroundScene />
       </Suspense>

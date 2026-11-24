@@ -40,14 +40,12 @@ export function Hero({ ready }: { ready: boolean }) {
     const ctx = gsap.context(() => {
       gsap.set('.hero-char', { yPercent: 120, rotateX: -90, opacity: 0 });
       gsap.set('.hero-fade', { y: 30, opacity: 0 });
-      gsap.set('.hero-rule', { scaleX: 0 });
     }, section);
     if (!ready) return () => ctx.revert();
 
     const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
     ctx.add(() => {
       tl.to('.hero-char', { yPercent: 0, rotateX: 0, opacity: 1, duration: 1.4, stagger: 0.035 })
-        .to('.hero-rule', { scaleX: 1, duration: 1.2 }, '-=1.1')
         .to('.hero-fade', { y: 0, opacity: 1, duration: 1, stagger: 0.08 }, '-=1');
 
       // Parallax out as the user scrolls away
@@ -90,45 +88,38 @@ export function Hero({ ready }: { ready: boolean }) {
       <div ref={contentRef} className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-24 pt-32 lg:px-10">
         <div className="hero-fade mb-8 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 backdrop-blur-md">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#d3e97a] opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#d3e97a]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
           </span>
           <span className="text-xs uppercase tracking-[0.25em] text-white/70">SDE 2 · Neutrinos · Bangalore</span>
         </div>
 
-        <h1 className="font-display leading-[0.85] text-white [perspective:800px]">
-          <SplitChars text="RAJKUMAR" className="block text-[22vw] sm:text-[17vw] lg:text-[13rem] xl:text-[15rem]" />
-          <span className="flex items-end gap-6">
-            <SplitChars
-              text="V."
-              className="block text-[22vw] text-[#d3e97a] sm:text-[17vw] lg:text-[13rem] xl:text-[15rem]"
-            />
-            <span className="hero-rule mb-[3vw] hidden h-px flex-1 origin-left bg-gradient-to-r from-white/40 to-transparent sm:block lg:mb-12" />
-          </span>
+        <h1 className="whitespace-nowrap font-display text-[17vw] leading-[0.85] text-white [perspective:800px] sm:text-[15vw] lg:text-[11.5rem] xl:text-[13rem]">
+          <SplitChars text="RAJKUMAR" />
+          <span className="inline-block w-[0.22em]" aria-hidden="true" />
+          <SplitChars text="V." className="text-brand" />
         </h1>
 
-        <div className="mt-8 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+        <div className="mt-8 flex max-w-2xl flex-col gap-10">
           <div>
-            <p className="hero-fade text-2xl font-light text-white/85 sm:text-3xl">
-              Frontend engineer who builds{' '}
-              <span className="relative inline-flex overflow-hidden align-bottom">
-                <span ref={roleRef} className="inline-block font-normal text-[#d3e97a]">
-                  {ROLES[roleIndex]}
-                </span>
+            <p className="hero-fade text-xl font-light text-white/70 sm:text-2xl">Frontend engineer who builds</p>
+            <div className="hero-fade h-[1.45em] overflow-hidden text-5xl leading-[1.35] sm:text-6xl">
+              <span ref={roleRef} className="font-serif-i text-gradient block pr-2">
+                {ROLES[roleIndex]}
               </span>
-            </p>
+            </div>
             <p className="hero-fade mt-5 max-w-xl text-base leading-relaxed text-white/55">
               4+ years shipping scalable, user-focused products with Angular, React and React Native, from
               real-time trading dashboards to apps people install on their phones.
             </p>
           </div>
 
-          <div className="flex flex-col gap-8 lg:items-end">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-6">
             <div className="hero-fade flex flex-wrap gap-4">
               <Magnetic>
                 <button
                   onClick={() => scrollToId('#projects')}
-                  className="group relative overflow-hidden rounded-full bg-[#d3e97a] px-8 py-4 font-medium text-[#0b0b0d]"
+                  className="group relative overflow-hidden rounded-full bg-brand px-8 py-4 font-medium text-ink"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     View my work
@@ -140,7 +131,7 @@ export function Hero({ ready }: { ready: boolean }) {
               <Magnetic>
                 <button
                   onClick={() => scrollToId('#contact')}
-                  className="rounded-full border border-white/20 bg-white/[0.03] px-8 py-4 text-white backdrop-blur-md transition-colors duration-300 hover:border-[#d3e97a] hover:text-[#d3e97a]"
+                  className="rounded-full border border-white/20 bg-white/[0.03] px-8 py-4 text-white backdrop-blur-md transition-colors duration-300 hover:border-brand hover:text-brand"
                 >
                   Let's connect
                 </button>
@@ -154,7 +145,7 @@ export function Hero({ ready }: { ready: boolean }) {
                     target={href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-[#d3e97a] hover:bg-[#d3e97a] hover:text-[#0b0b0d]"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-brand hover:bg-brand hover:text-ink"
                   >
                     <Icon size={18} />
                   </a>
@@ -172,7 +163,7 @@ export function Hero({ ready }: { ready: boolean }) {
       >
         Scroll
         <span className="relative h-12 w-px overflow-hidden bg-white/15">
-          <span className="absolute left-0 top-0 h-1/2 w-full animate-scroll-line bg-[#d3e97a]" />
+          <span className="absolute left-0 top-0 h-1/2 w-full animate-scroll-line bg-brand" />
         </span>
       </button>
     </section>

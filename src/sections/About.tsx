@@ -78,31 +78,31 @@ export function About() {
                   alt="Rajkumar V"
                   className="h-[115%] w-full -translate-y-[7%] object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0d]/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent" />
                 <p className="absolute bottom-5 left-5 font-display text-3xl text-white">Rajkumar V</p>
               </div>
             </TiltCard>
             <div className="about-badge glass absolute -right-4 top-8 rounded-2xl px-4 py-3 sm:-right-10 [animation:float_5s_ease-in-out_infinite]">
               <p className="text-xs text-white/50">Specialized in</p>
-              <p className="text-sm font-medium text-[#d3e97a]">Angular · React · RN</p>
+              <p className="text-sm font-medium text-brand">Angular · React · RN</p>
             </div>
             <div className="about-badge glass absolute -left-4 bottom-20 rounded-2xl px-4 py-3 sm:-left-10 [animation:float_6s_ease-in-out_infinite_1s]">
-              <p className="font-display text-3xl leading-none text-[#d3e97a]">4+</p>
+              <p className="font-display text-3xl leading-none text-brand">4+</p>
               <p className="text-xs text-white/50">Years building</p>
             </div>
           </div>
 
           <div className="flex flex-col justify-center">
             <RevealText
-              text="Passionate about building things that matter."
+              text="Passionate about building things that *matter.*"
               className="font-display text-5xl leading-[0.95] text-white sm:text-6xl lg:text-7xl"
             />
             <div className="mt-10 space-y-6">
               <p className="about-para text-lg leading-relaxed text-white/65">
                 I'm a frontend developer with 4+ years of experience crafting scalable web applications. My
                 journey began with curiosity about how the web works, and grew into building real-time systems
-                at <span className="text-[#d3e97a]">Ninjacart</span> and now a platform-wide component library
-                and design system at <span className="text-[#d3e97a]">Neutrinos</span>.
+                at <span className="text-brand">Ninjacart</span> and now a platform-wide component library
+                and design system at <span className="text-brand">Neutrinos</span>.
               </p>
               <p className="about-para text-lg leading-relaxed text-white/65">
                 I specialize in <span className="text-white">Angular</span> and{' '}
@@ -127,11 +127,11 @@ export function About() {
         {stats.map((s) => (
           <div
             key={s.label}
-            className="about-stat glass group rounded-3xl p-6 transition-colors duration-500 hover:border-[#d3e97a]/40 sm:p-8"
+            className="about-stat glass spotlight group rounded-3xl p-6 transition-colors duration-500 hover:border-brand/40 sm:p-8"
           >
             <CountUp
               value={s.value}
-              className="block font-display text-6xl text-[#d3e97a] transition-transform duration-500 group-hover:scale-110 sm:text-7xl"
+              className="block font-display text-6xl text-brand transition-transform duration-500 group-hover:scale-110 sm:text-7xl"
             />
             <p className="mt-2 text-sm text-white/50">{s.label}</p>
           </div>

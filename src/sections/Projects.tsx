@@ -208,7 +208,7 @@ function ProjectVisual({ project }: { project: Project }) {
           loading="lazy"
           className="project-img h-full w-full scale-110 object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-125"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0d] via-[#0b0b0d]/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
       </>
     );
   }
@@ -217,7 +217,7 @@ function ProjectVisual({ project }: { project: Project }) {
       role="img"
       aria-label={`${project.title} screenshots`}
       className="absolute inset-0 overflow-hidden"
-      style={{ background: `radial-gradient(120% 90% at 50% 110%, ${v.to} 0%, ${v.from} 60%, #0b0b0d 100%)` }}
+      style={{ background: `radial-gradient(120% 90% at 50% 110%, ${v.to} 0%, ${v.from} 60%, rgb(var(--ink)) 100%)` }}
     >
       {/* dotted grid + glow */}
       <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(rgba(255,255,255,0.35)_1px,transparent_1px)] [background-size:18px_18px] [mask-image:radial-gradient(ellipse_at_center,#000_30%,transparent_75%)]" />
@@ -237,7 +237,7 @@ function ProjectVisual({ project }: { project: Project }) {
           <BrowserWindow src={v.shots[0]} url={v.url} className="left-[6%] top-[24%] z-10 w-[70%] rotate-[-2deg] group-hover:-translate-x-2 group-hover:-translate-y-3 group-hover:rotate-[-3deg]" />
         </>
       )}
-      <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#0b0b0d]/70 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-ink/70 to-transparent" />
     </div>
   );
 }
@@ -245,21 +245,21 @@ function ProjectVisual({ project }: { project: Project }) {
 function ProjectCard({ project, index }: { project: Project; index: number }) {
   return (
     <TiltCard className="h-full rounded-[2rem]" max={7} cursor={project.liveUrl ? 'Open' : undefined}>
-      <article className="project-card glass group flex h-full flex-col overflow-hidden rounded-[2rem] transition-colors duration-500 hover:border-[#d3e97a]/40">
+      <article className="project-card glass spotlight group flex h-full flex-col overflow-hidden rounded-[2rem] transition-colors duration-500 hover:border-brand/40">
         <div className="relative aspect-[16/10] flex-shrink-0 overflow-hidden lg:aspect-auto lg:h-[46%]">
           <ProjectVisual project={project} />
           <span className="absolute left-5 top-5 z-20 rounded-full border border-white/15 bg-black/40 px-3 py-1 font-mono text-xs text-white/80 backdrop-blur-md">
             {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
           </span>
           {project.liveUrl && (
-            <span className="absolute right-5 top-5 z-20 flex h-11 w-11 -translate-y-2 items-center justify-center rounded-full bg-[#d3e97a] text-[#0b0b0d] opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:rotate-45 group-hover:opacity-100">
+            <span className="absolute right-5 top-5 z-20 flex h-11 w-11 -translate-y-2 items-center justify-center rounded-full bg-brand text-ink opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:rotate-45 group-hover:opacity-100">
               <ArrowUpRight size={20} />
             </span>
           )}
         </div>
 
         <div className="flex flex-1 flex-col p-6 sm:p-8 lg:min-h-0 lg:p-7">
-          <span className="mb-2 text-xs font-medium uppercase tracking-[0.25em] text-[#d3e97a]">
+          <span className="mb-2 text-xs font-medium uppercase tracking-[0.25em] text-brand">
             {project.company}
           </span>
           <h3 className="mb-3 font-display text-4xl leading-none text-white sm:text-5xl lg:text-[2.6rem]">{project.title}</h3>
@@ -268,7 +268,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <ul className="mb-6 space-y-2 lg:hidden">
             {project.features.slice(0, 2).map((f, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-white/50">
-                <ArrowRight size={14} className="mt-1 flex-shrink-0 text-[#d3e97a]" />
+                <ArrowRight size={14} className="mt-1 flex-shrink-0 text-brand" />
                 {f}
               </li>
             ))}
@@ -289,11 +289,11 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
                   href={project.liveUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group/link flex items-center gap-2 text-sm font-medium text-[#d3e97a]"
+                  className="group/link flex items-center gap-2 text-sm font-medium text-brand"
                 >
                   <span className="relative">
                     {project.liveLabel ?? 'View project'}
-                    <span className="absolute -bottom-0.5 left-0 h-px w-full origin-right scale-x-0 bg-[#d3e97a] transition-transform duration-300 group-hover/link:origin-left group-hover/link:scale-x-100" />
+                    <span className="absolute -bottom-0.5 left-0 h-px w-full origin-right scale-x-0 bg-brand transition-transform duration-300 group-hover/link:origin-left group-hover/link:scale-x-100" />
                   </span>
                   <ArrowUpRight size={16} className="transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" />
                 </a>
@@ -399,14 +399,14 @@ export function Projects() {
           <div className="md:col-span-2 lg:w-[min(38vw,560px)] lg:flex-shrink-0 lg:pr-10">
             <SectionLabel index="03" label="Projects" />
             <RevealText
-              text="Featured work"
+              text="Featured *work*"
               className="font-display text-6xl leading-[0.9] text-white sm:text-7xl lg:text-[9rem]"
             />
             <p className="mt-6 max-w-sm text-white/50">
               Three apps I designed, built and shipped end to end, plus earlier work from my career.
             </p>
             <p className="mt-10 hidden items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40 lg:flex">
-              Keep scrolling <ArrowRight size={14} className="animate-nudge text-[#d3e97a]" />
+              Keep scrolling <ArrowRight size={14} className="animate-nudge text-brand" />
             </p>
           </div>
 
@@ -421,7 +421,7 @@ export function Projects() {
                 href="https://github.com/rajkumar30598"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-full border border-white/15 bg-white/[0.03] text-white backdrop-blur-md transition-all duration-500 hover:scale-105 hover:border-[#d3e97a] hover:bg-[#d3e97a] hover:text-[#0b0b0d]"
+                className="group flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-full border border-white/15 bg-white/[0.03] text-white backdrop-blur-md transition-all duration-500 hover:scale-105 hover:border-brand hover:bg-brand hover:text-ink"
               >
                 <Github size={30} />
                 <span className="font-display text-2xl">More on GitHub</span>
@@ -433,7 +433,7 @@ export function Projects() {
 
         <div className="absolute bottom-8 left-1/2 hidden w-[min(80rem,100vw)] -translate-x-1/2 px-10 lg:block">
           <div className="h-px w-full bg-white/10">
-            <div className="projects-progress h-full origin-left scale-x-0 bg-[#d3e97a]" />
+            <div className="projects-progress h-full origin-left scale-x-0 bg-brand" />
           </div>
         </div>
       </div>

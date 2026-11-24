@@ -5,6 +5,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        brand: {
+          DEFAULT: "rgb(var(--brand) / <alpha-value>)",
+          2: "rgb(var(--brand-2) / <alpha-value>)",
+          3: "rgb(var(--brand-3) / <alpha-value>)",
+        },
+        ink: "rgb(var(--ink) / <alpha-value>)",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

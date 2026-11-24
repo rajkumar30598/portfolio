@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ScrambleText } from '@/components/motion';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { lockScroll, scrollToId } from '@/lib/motion';
 
 const navLinks = [
@@ -14,15 +15,38 @@ const navLinks = [
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [active, setActive] = useState('#home');
+  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [pill, setPill] = useState({ left: 0, width: 0 });
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // highlight whichever section is in the middle of the screen
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) setActive(`#${e.target.id}`);
+        });
+      },
+      { rootMargin: '-45% 0px -50% 0px' }
+    );
+    navLinks.forEach((l) => {
+      const el = document.querySelector(l.href);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = linkRefs.current[active];
+    if (el) setPill({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [active]);
 
   useEffect(() => {
     lockScroll(isMobileMenuOpen);
@@ -35,99 +59,112 @@ export function Navigation() {
 
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled
-            ? 'bg-[#0b0b0d]/60 backdrop-blur-xl border-b border-white/10'
-            : 'bg-transparent'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <a
-              href="#home"
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToSection('#home');
-              }}
-              className="font-display text-2xl text-white hover:text-[#d3e97a] transition-all duration-300 hover:tracking-wider"
-            >
-              Rajkumar<span className="text-[#d3e97a]">.</span>V
-            </a>
+      <nav className="fixed left-0 right-0 top-0 z-50">
+        <div
+          className={`mx-auto flex max-w-7xl items-center justify-between px-6 transition-all duration-500 lg:px-10 ${
+            isScrolled ? 'h-16' : 'h-24'
+          }`}
+        >
+          <a
+            href="#home"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection('#home');
+            }}
+            className="group flex items-center gap-2 font-display text-2xl text-white"
+          >
+            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand font-display text-xl text-ink transition-transform duration-500 group-hover:rotate-[-8deg]">
+              RV
+            </span>
+            <span className="hidden sm:inline">
+              Rajkumar<span className="text-brand">.</span>V
+            </span>
+          </a>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(link.href);
-                  }}
-                  className="relative text-sm text-white/80 hover:text-[#d3e97a] transition-all duration-300 group py-2"
-                >
-                  {link.label}
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-[#d3e97a] transition-all duration-300 group-hover:w-full" />
-                </a>
-              ))}
-              <Button
-                onClick={() => scrollToSection('#contact')}
-                className="rounded-full bg-[#d3e97a] text-[#0b0b0d] hover:bg-white hover:scale-105 transition-all duration-300 font-medium px-6"
+          {/* Desktop: floating glass pill with a sliding active indicator */}
+          <div
+            className={`relative hidden items-center rounded-full border p-1.5 backdrop-blur-xl transition-colors duration-500 md:flex ${
+              isScrolled ? 'border-white/10 bg-ink/60' : 'border-white/5 bg-white/[0.03]'
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className="absolute bottom-1.5 top-1.5 rounded-full bg-brand transition-all duration-500 ease-[cubic-bezier(.7,0,.2,1)]"
+              style={{ left: pill.left, width: pill.width }}
+            />
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                ref={(el) => {
+                  linkRefs.current[link.href] = el;
+                }}
+                href={link.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection(link.href);
+                }}
+                aria-current={active === link.href ? 'true' : undefined}
+                className={`relative z-10 rounded-full px-4 py-2 text-sm transition-colors duration-300 ${
+                  active === link.href ? 'text-ink' : 'text-white/75 hover:text-white'
+                }`}
               >
-                Let's Talk
-              </Button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-white p-2"
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+                <ScrambleText text={link.label} />
+              </a>
+            ))}
           </div>
+
+          <div className="hidden items-center gap-3 md:flex">
+            <ThemeSwitcher />
+          </div>
+
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="relative z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white backdrop-blur-md md:hidden"
+            aria-label="Toggle menu"
+            aria-expanded={isMobileMenuOpen}
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu: full-screen panel that wipes down */}
       <div
-        className={`fixed inset-0 z-40 bg-[#0b0b0d]/95 backdrop-blur-xl transition-all duration-500 md:hidden ${
-          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-        }`}
+        className={`fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl transition-[clip-path] duration-700 ease-[cubic-bezier(.7,0,.2,1)] md:hidden`}
+        style={{ clipPath: isMobileMenuOpen ? 'inset(0 0 0 0)' : 'inset(0 0 100% 0)' }}
+        aria-hidden={!isMobileMenuOpen}
       >
-        <div className="flex flex-col items-center justify-center h-full gap-8">
+        <div className="flex h-full flex-col justify-center gap-2 px-8">
           {navLinks.map((link, index) => (
             <a
               key={link.label}
               href={link.href}
+              tabIndex={isMobileMenuOpen ? 0 : -1}
               onClick={(e) => {
                 e.preventDefault();
                 scrollToSection(link.href);
               }}
-              className="font-display text-4xl text-white hover:text-[#d3e97a] transition-all duration-300"
+              className="flex items-baseline gap-4 font-display text-6xl text-white transition-all duration-500 hover:text-brand"
               style={{
-                transitionDelay: isMobileMenuOpen ? `${index * 100}ms` : '0ms',
+                transitionDelay: isMobileMenuOpen ? `${150 + index * 70}ms` : '0ms',
                 opacity: isMobileMenuOpen ? 1 : 0,
-                transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(20px)',
+                transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(30px)',
               }}
             >
+              <span className="font-mono text-xs text-brand">0{index + 1}</span>
               {link.label}
             </a>
           ))}
-          <Button
-            onClick={() => scrollToSection('#contact')}
-            className="bg-[#d3e97a] text-[#161616] hover:bg-[#e8f5a8] font-medium px-8 py-6 text-lg mt-4"
+          <div
+            className="mt-10 flex items-center gap-4 transition-all duration-500"
             style={{
-              transitionDelay: isMobileMenuOpen ? '400ms' : '0ms',
+              transitionDelay: isMobileMenuOpen ? '550ms' : '0ms',
               opacity: isMobileMenuOpen ? 1 : 0,
-              transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(20px)',
             }}
           >
-            Let's Talk
-          </Button>
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">Theme</span>
+            <ThemeSwitcher size="lg" />
+          </div>
         </div>
       </div>
     </>

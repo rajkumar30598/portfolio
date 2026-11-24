@@ -17,9 +17,9 @@ const contacts = [
 ];
 
 const fieldClass =
-  'peer w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 pb-3 pt-7 text-white outline-none transition-all duration-300 placeholder:text-transparent focus:border-[#d3e97a] focus:bg-white/[0.06] focus:shadow-[0_0_0_4px_rgba(211,233,122,0.12)]';
+  'peer w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 pb-3 pt-7 text-white outline-none transition-all duration-300 placeholder:text-transparent focus:border-brand focus:bg-white/[0.06] focus:shadow-[0_0_0_4px_rgb(var(--brand)/0.12)]';
 const labelClass =
-  'pointer-events-none absolute left-5 top-5 text-white/40 transition-all duration-300 peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-[#d3e97a] peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs';
+  'pointer-events-none absolute left-5 top-5 text-white/40 transition-all duration-300 peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-brand peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs';
 
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -74,7 +74,7 @@ export function Contact() {
     <section id="contact" ref={sectionRef} className="relative overflow-hidden py-24 sm:py-32 lg:py-40">
       <div
         aria-hidden="true"
-        className="contact-giant pointer-events-none absolute left-0 top-10 whitespace-nowrap font-display text-[22vw] leading-none text-transparent [-webkit-text-stroke:1px_rgba(211,233,122,0.15)]"
+        className="contact-giant pointer-events-none absolute left-0 top-10 whitespace-nowrap font-display text-[22vw] leading-none text-transparent [-webkit-text-stroke:1px_rgb(var(--brand)/0.15)]"
       >
         Let's talk · Let's build · Let's talk ·
       </div>
@@ -84,7 +84,7 @@ export function Contact() {
         <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
           <div>
             <RevealText
-              text="Let's work together."
+              text="Let's work *together.*"
               className="font-display text-6xl leading-[0.9] text-white sm:text-7xl lg:text-8xl"
             />
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/60">
@@ -96,25 +96,25 @@ export function Contact() {
               {contacts.map(({ icon: Icon, label, value, href }) => {
                 const inner = (
                   <>
-                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-[#d3e97a]/20 bg-[#d3e97a]/10 text-[#d3e97a] transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:bg-[#d3e97a] group-hover:text-[#0b0b0d]">
+                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-brand/20 bg-brand/10 text-brand transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:bg-brand group-hover:text-ink">
                       <Icon size={22} />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-white/45">{label}</span>
-                      <span className="block truncate text-lg text-white transition-colors group-hover:text-[#d3e97a]">
+                      <span className="block truncate text-lg text-white transition-colors group-hover:text-brand">
                         {value}
                       </span>
                     </span>
                     {href && (
                       <ArrowUpRight
                         size={20}
-                        className="text-white/30 transition-all duration-500 group-hover:rotate-45 group-hover:text-[#d3e97a]"
+                        className="text-white/30 transition-all duration-500 group-hover:rotate-45 group-hover:text-brand"
                       />
                     )}
                   </>
                 );
                 const cls =
-                  'contact-item glass group flex items-center gap-5 rounded-3xl p-4 pr-6 transition-colors duration-500 hover:border-[#d3e97a]/40';
+                  'contact-item glass spotlight group flex items-center gap-5 rounded-3xl p-4 pr-6 transition-colors duration-500 hover:border-brand/40';
                 return href ? (
                   <a key={label} href={href} className={cls}>
                     {inner}
@@ -138,7 +138,7 @@ export function Contact() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-all duration-300 hover:border-[#d3e97a] hover:bg-[#d3e97a] hover:text-[#0b0b0d]"
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-all duration-300 hover:border-brand hover:bg-brand hover:text-ink"
                   >
                     <Icon size={20} />
                   </a>
@@ -150,10 +150,10 @@ export function Contact() {
           <div style={{ perspective: '1200px' }}>
             <form
               onSubmit={handleSubmit}
-              className="contact-form glass relative space-y-5 overflow-hidden rounded-[2rem] p-6 sm:p-10"
+              className="contact-form glass spotlight relative space-y-5 overflow-hidden rounded-[2rem] p-6 sm:p-10"
             >
-              <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#d3e97a]/20 blur-[90px]" />
-              <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[#7c5cff]/25 blur-[90px]" />
+              <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-brand/20 blur-[90px]" />
+              <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-brand-2/25 blur-[90px]" />
               <h3 className="relative font-display text-4xl text-white">Send a message</h3>
               <div className="relative">
                 <input id="name" name="name" placeholder="Name" required value={form.name} onChange={onChange} className={fieldClass} />
@@ -169,7 +169,7 @@ export function Contact() {
               </div>
               <button
                 type="submit"
-                className="group relative w-full overflow-hidden rounded-2xl bg-[#d3e97a] py-5 font-medium text-[#0b0b0d]"
+                className="group relative w-full overflow-hidden rounded-2xl bg-brand py-5 font-medium text-ink"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   Send message

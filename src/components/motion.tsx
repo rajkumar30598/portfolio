@@ -8,6 +8,11 @@ gsap.registerPlugin(ScrollTrigger);
 const isFinePointer = () =>
   typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
 
+const brandRgba = (a: number) => {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim().split(/\s+/).join(',');
+  return `rgba(${v},${a})`;
+};
+
 /* Custom cursor: a dot and a lagging ring that grows over interactive elements */
 export function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
@@ -40,7 +45,7 @@ export function Cursor() {
       if (label.current) label.current.textContent = text;
       gsap.to(r, {
         scale: target ? (text ? 2.6 : 1.8) : 1,
-        backgroundColor: target ? 'rgba(211,233,122,0.12)' : 'rgba(211,233,122,0)',
+        backgroundColor: target ? brandRgba(0.12) : brandRgba(0),
         duration: 0.3,
       });
       gsap.to(d, { scale: target ? 0 : 1, duration: 0.2 });
@@ -65,13 +70,13 @@ export function Cursor() {
     <>
       <div
         ref={ring}
-        className="pointer-events-none fixed left-0 top-0 z-[100] flex h-10 w-10 items-center justify-center rounded-full border border-[#d3e97a]/60 opacity-0 mix-blend-difference"
+        className="pointer-events-none fixed left-0 top-0 z-[100] flex h-10 w-10 items-center justify-center rounded-full border border-brand/60 opacity-0 mix-blend-difference"
       >
-        <span ref={label} className="text-[5px] font-semibold uppercase tracking-widest text-[#d3e97a]" />
+        <span ref={label} className="text-[5px] font-semibold uppercase tracking-widest text-brand" />
       </div>
       <div
         ref={dot}
-        className="pointer-events-none fixed left-0 top-0 z-[100] h-1.5 w-1.5 rounded-full bg-[#d3e97a] opacity-0"
+        className="pointer-events-none fixed left-0 top-0 z-[100] h-1.5 w-1.5 rounded-full bg-brand opacity-0"
       />
     </>
   );
@@ -130,7 +135,7 @@ export function TiltCard({
         ease: 'power3.out',
       });
       if (glare.current) {
-        glare.current.style.background = `radial-gradient(circle at ${px * 100}% ${py * 100}%, rgba(211,233,122,0.18), transparent 55%)`;
+        glare.current.style.background = `radial-gradient(circle at ${px * 100}% ${py * 100}%, rgb(var(--brand) / 0.18), transparent 55%)`;
         glare.current.style.opacity = '1';
       }
     };
@@ -216,7 +221,7 @@ export function Marquee({ items, reverse = false }: { items: string[]; reverse?:
             key={i}
             className="flex items-center gap-4 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-display text-2xl tracking-wide text-white/80 backdrop-blur-sm sm:text-3xl"
           >
-            <span className="h-2 w-2 rotate-45 bg-[#d3e97a]" />
+            <span className="h-2 w-2 rotate-45 bg-brand" />
             {item}
           </span>
         ))}
@@ -242,7 +247,7 @@ export function ScrollProgress() {
     <div className="fixed left-0 right-0 top-0 z-[60] h-[2px] bg-white/5">
       <div
         ref={bar}
-        className="h-full origin-left bg-gradient-to-r from-[#d3e97a] via-[#38d9f5] to-[#7c5cff]"
+        className="h-full origin-left bg-gradient-to-r from-brand via-brand-3 to-brand-2"
         style={{ transform: 'scaleX(0)' }}
       />
     </div>
@@ -285,14 +290,14 @@ export function Preloader({ onDone }: { onDone: () => void }) {
   return (
     <div
       ref={root}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0b0b0d]"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-ink"
       style={{ clipPath: 'inset(0 0 0% 0)' }}
     >
       <div className="preloader-inner w-64 text-center">
         <p className="mb-4 text-xs uppercase tracking-[0.4em] text-white/40">Loading experience</p>
-        <span ref={count} className="font-display text-8xl text-[#d3e97a]">000</span>
+        <span ref={count} className="font-display text-8xl text-brand">000</span>
         <div className="mt-6 h-px w-full bg-white/10">
-          <div className="preloader-line h-full origin-left scale-x-0 bg-[#d3e97a]" />
+          <div className="preloader-line h-full origin-left scale-x-0 bg-brand" />
         </div>
       </div>
     </div>
@@ -323,16 +328,78 @@ export function RevealText({
     });
     return () => st.kill();
   }, [text]);
+  // words wrapped in *asterisks* render as the italic serif accent
+  const plain = text.replace(/\*/g, '');
   return (
-    <Tag ref={ref} className={className} aria-label={text}>
-      {text.split(' ').map((w, i) => (
-        <span key={i} aria-hidden="true" className="inline-block overflow-hidden pb-[0.08em] align-bottom mr-[0.22em] last:mr-0">
-          <span className="rw inline-block origin-bottom-left">{w}</span>
-        </span>
-      ))}
+    <Tag ref={ref} className={className} aria-label={plain}>
+      {text.split(' ').map((w, i) => {
+        const accent = w.startsWith('*');
+        const word = w.replace(/\*/g, '');
+        return (
+          <span
+            key={i}
+            aria-hidden="true"
+            className="mr-[0.22em] inline-block overflow-hidden pb-[0.12em] pr-[0.06em] align-bottom last:mr-0"
+          >
+            <span
+              className={`rw inline-block origin-bottom-left ${
+                accent ? 'font-serif-i text-gradient text-[1.08em] leading-[0.9]' : ''
+              }`}
+            >
+              {word}
+            </span>
+          </span>
+        );
+      })}
     </Tag>
   );
 }
+
+const GLYPHS = '!<>-_\\/[]{}=+*^?#ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+/* Characters shuffle through random glyphs and settle left to right on hover */
+export function ScrambleText({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    const host = el?.closest('a, button') as HTMLElement | null;
+    if (!el || !host || prefersReducedMotion()) return;
+    let raf = 0;
+    const run = () => {
+      cancelAnimationFrame(raf);
+      const start = performance.now();
+      const dur = 450;
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / dur, 1);
+        const settled = Math.floor(p * text.length);
+        el.textContent = text
+          .split('')
+          .map((c, i) => (i < settled || c === ' ' ? c : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]))
+          .join('');
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    host.addEventListener('pointerenter', run);
+    return () => {
+      cancelAnimationFrame(raf);
+      host.removeEventListener('pointerenter', run);
+      el.textContent = text;
+    };
+  }, [text]);
+  return (
+    <span className="relative inline-block">
+      {/* invisible copy reserves the final width so the layout doesn't jitter */}
+      <span className="invisible">{text}</span>
+      <span ref={ref} aria-hidden="true" className="absolute inset-0 text-center">
+        {text}
+      </span>
+      <span className="sr-only">{text}</span>
+    </span>
+  );
+}
+
+
 
 /* Small eyebrow label with an index number and animated rule */
 export function SectionLabel({ index, label }: { index: string; label: string }) {
@@ -351,9 +418,9 @@ export function SectionLabel({ index, label }: { index: string; label: string })
   }, []);
   return (
     <div className="mb-8 flex items-center gap-4">
-      <span className="font-mono text-xs text-[#d3e97a]">{index}</span>
+      <span className="font-mono text-xs text-brand">{index}</span>
       <span className="text-sm font-medium uppercase tracking-[0.3em] text-white/70">{label}</span>
-      <div ref={line} className="h-px flex-1 origin-left bg-gradient-to-r from-[#d3e97a]/60 to-transparent" />
+      <div ref={line} className="h-px flex-1 origin-left bg-gradient-to-r from-brand/60 to-transparent" />
     </div>
   );
 }
