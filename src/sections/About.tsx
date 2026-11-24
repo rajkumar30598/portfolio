@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowUpRight } from 'lucide-react';
+import { Layers, LayoutTemplate, Smartphone, Zap } from 'lucide-react';
 import { BandMarquee, RevealText, SectionLabel } from '@/components/motion';
 import { prefersReducedMotion } from '@/lib/motion';
 
@@ -17,10 +17,30 @@ const facts = [
 ];
 
 const services = [
-  { title: 'Frontend architecture', tags: ['Angular', 'React', 'TypeScript', 'RxJS'] },
-  { title: 'Design systems', tags: ['Component libraries', 'Theming', 'Docs', 'A11y'] },
-  { title: 'Real-time products', tags: ['WebSocket', 'Trading dashboards', 'Chat'] },
-  { title: 'Mobile & web apps', tags: ['React Native', 'Expo', 'Next.js', 'Firebase'] },
+  {
+    icon: Layers,
+    title: 'Frontend architecture',
+    text: 'Scalable Angular and React apps with clean state management, lazy loading and real performance budgets.',
+    tags: ['Angular', 'React', 'TypeScript', 'RxJS'],
+  },
+  {
+    icon: LayoutTemplate,
+    title: 'Design systems',
+    text: 'Themeable, accessible component libraries with docs and versioning that teams actually adopt.',
+    tags: ['Component libraries', 'Theming', 'Docs', 'A11y'],
+  },
+  {
+    icon: Zap,
+    title: 'Real-time products',
+    text: 'Live dashboards, trading flows and in-app chat on WebSockets that stay fast under heavy load.',
+    tags: ['WebSocket', 'Trading dashboards', 'Chat'],
+  },
+  {
+    icon: Smartphone,
+    title: 'Mobile & web apps',
+    text: 'My own products shipped end to end with React Native, Expo and Next.js, from idea to store listing.',
+    tags: ['React Native', 'Expo', 'Next.js', 'Firebase'],
+  },
 ];
 
 export function About() {
@@ -121,37 +141,32 @@ export function About() {
 
           {/* What I do */}
           <div className="services mt-24 lg:mt-32">
-            <div className="mb-6 flex items-end justify-between gap-6">
-              <h2 className="font-display text-4xl font-bold sm:text-5xl">What I do</h2>
-              <span className="hidden text-sm text-white/50 sm:block">Hover a row</span>
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+              <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">What I do</h2>
+              <p className="max-w-sm text-white/55">The kind of work I'm best at, at my day job and on my own products.</p>
             </div>
-            <div className="border-t border-white/10">
+            <div className="grid gap-4 sm:grid-cols-2">
               {services.map((s, i) => (
                 <div
                   key={s.title}
-                  data-cursor=""
-                  className="service-row group relative overflow-hidden border-b border-white/10"
+                  className="service-row group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.025] p-7 transition-[border-color,background-color] duration-500 hover:border-brand/50 hover:bg-white/[0.04] sm:p-8"
                 >
-                  {/* blue fill rising from the bottom on hover */}
-                  <span className="absolute inset-0 translate-y-full bg-brand transition-transform duration-500 ease-[cubic-bezier(.7,0,.2,1)] group-hover:translate-y-0" />
-                  <div className="relative flex flex-col gap-3 px-1 py-7 transition-colors duration-300 group-hover:text-white sm:flex-row sm:items-center sm:gap-8 sm:px-4 lg:py-9">
-                    <span className="text-sm font-medium text-white/50 transition-colors group-hover:text-white/70 sm:w-16">
-                      0{i + 1}
+                  {/* soft terracotta glow in the corner on hover */}
+                  <span className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/0 blur-3xl transition-colors duration-500 group-hover:bg-brand/25" />
+                  <div className="relative mb-10 flex items-start justify-between">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/80 transition-colors duration-500 group-hover:border-brand group-hover:bg-brand group-hover:text-white">
+                      <s.icon size={22} />
                     </span>
-                    <h3 className="flex-1 font-display text-3xl font-semibold transition-transform duration-500 group-hover:translate-x-2 sm:text-4xl lg:text-5xl">
-                      {s.title}
-                    </h3>
-                    <div className="flex flex-wrap gap-2 sm:max-w-sm sm:justify-end">
-                      {s.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium transition-colors group-hover:border-white/40"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                    <ArrowUpRight className="hidden h-7 w-7 -rotate-45 opacity-0 transition-all duration-500 group-hover:rotate-0 group-hover:opacity-100 sm:block" />
+                    <span className="text-sm font-medium text-white/35">0{i + 1}</span>
+                  </div>
+                  <h3 className="relative font-display text-2xl font-semibold tracking-tight sm:text-3xl">{s.title}</h3>
+                  <p className="relative mt-3 max-w-md leading-relaxed text-white/60">{s.text}</p>
+                  <div className="relative mt-6 flex flex-wrap gap-2">
+                    {s.tags.map((t) => (
+                      <span key={t} className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65">
+                        {t}
+                      </span>
+                    ))}
                   </div>
                 </div>
               ))}

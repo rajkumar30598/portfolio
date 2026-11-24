@@ -40,7 +40,7 @@ export function Cursor() {
       if (label.current) label.current.textContent = text;
       gsap.to(r, {
         scale: target ? (text ? 2.6 : 1.8) : 1,
-        backgroundColor: target ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0)',
+        backgroundColor: 'rgba(255,255,255,0)',
         duration: 0.3,
       });
       gsap.to(d, { scale: target ? 0 : 1, duration: 0.2 });
@@ -65,13 +65,13 @@ export function Cursor() {
     <>
       <div
         ref={ring}
-        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] flex h-10 w-10 items-center justify-center rounded-full border border-white opacity-0 mix-blend-difference"
+        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] flex h-10 w-10 items-center justify-center rounded-full border border-white/70 opacity-0"
       >
         <span ref={label} className="text-[5px] font-semibold uppercase tracking-widest text-white" />
       </div>
       <div
         ref={dot}
-        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] h-1.5 w-1.5 rounded-full bg-white opacity-0 mix-blend-difference"
+        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] h-1.5 w-1.5 rounded-full bg-white opacity-0"
       />
     </>
   );
