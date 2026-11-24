@@ -72,7 +72,7 @@ function Sign({ position, title, sub }: { position: [number, number, number]; ti
     <Html position={position} center distanceFactor={18} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
       <div className="whitespace-nowrap rounded-xl border border-white/40 bg-white/80 px-3 py-1.5 text-center shadow-lg backdrop-blur-md">
         <p className="font-display text-xl leading-none tracking-wide text-[#0b1630]">{title}</p>
-        {sub && <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2b6fd6]">{sub}</p>}
+        {sub && <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#c2502f]">{sub}</p>}
       </div>
     </Html>
   );

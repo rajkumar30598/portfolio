@@ -28,10 +28,10 @@
     --radius: 0.5rem;
 
     /* Theme tokens (rgb triplets), overwritten at runtime by src/lib/theme.ts */
-    --brand: 47 91 255;
-    --brand-2: 130 150 255;
-    --brand-3: 236 232 223;
-    --ink: 11 11 12;
+    --brand: 226 104 66;
+    --brand-2: 245 170 110;
+    --brand-3: 244 234 220;
+    --ink: 14 12 11;
 
     /* Custom colors */
     --color-bg: #161616;

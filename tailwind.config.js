@@ -11,7 +11,8 @@ module.exports = {
           3: "rgb(var(--brand-3) / <alpha-value>)",
         },
         ink: "rgb(var(--ink) / <alpha-value>)",
-        paper: "#121216",
+        paper: "#1a1614",
+        white: "#fbf6ef", // warm white, matches the cream in the photo
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

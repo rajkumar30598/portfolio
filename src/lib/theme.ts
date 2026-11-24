@@ -1,5 +1,6 @@
 /**
- * The site's single colour theme: near-black + warm cream with an electric-blue accent.
+ * The site's single colour theme, taken from the profile photo: warm near-black,
+ * terracotta (the red stone steps) and cream (the shirt stripes).
  * Colours are applied as CSS variables (rgb triplets) so Tailwind's `brand`
  * utilities and the three.js scenes read the same palette.
  */
@@ -17,10 +18,10 @@ export interface Theme {
 }
 
 export const THEME: Theme = {
-  brand: [47, 91, 255], // electric blue accent
-  brand2: [130, 150, 255],
-  brand3: [214, 224, 255], // cool white (particle highlights)
-  ink: [11, 11, 12], // near-black
+  brand: [226, 104, 66], // terracotta accent
+  brand2: [245, 170, 110], // warm amber
+  brand3: [244, 234, 220], // cream
+  ink: [14, 12, 11], // warm near-black
 };
 
 const triplet = (c: Rgb) => c.join(' ');

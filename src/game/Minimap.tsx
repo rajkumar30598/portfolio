@@ -66,7 +66,7 @@ export function Minimap() {
       g.textAlign = 'center';
       for (const s of STATIONS) {
         const [mx, my] = toMap(s.at[0], s.at[1]);
-        g.fillStyle = 'rgba(84,166,255,0.9)';
+        g.fillStyle = 'rgba(226,104,66,0.95)';
         g.beginPath();
         g.arc(mx, my, 3, 0, Math.PI * 2);
         g.fill();
@@ -96,7 +96,7 @@ export function Minimap() {
       g.translate(px, py);
       g.rotate(-yaw + Math.PI);
       g.fillStyle = '#ffffff';
-      g.strokeStyle = '#2b6fd6';
+      g.strokeStyle = '#b8472a';
       g.lineWidth = 2;
       g.beginPath();
       g.moveTo(0, -7);
