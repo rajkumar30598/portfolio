@@ -2,12 +2,13 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
-import { ArrowUpRight, Coins, Github, Linkedin, Mail, Phone, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowUpRight, Camera, Coins, Github, Linkedin, Mail, Phone, Volume2, VolumeX, X } from 'lucide-react';
 import { EMAIL, GITHUB, LINKEDIN, PHONE, experiences, projects } from '@/data/portfolio';
-import { bindKeyboard, input, setStick } from './input';
+import { bindKeyboard, cycleCamera, input, onCameraChange, setStick } from './input';
+import { Minimap } from './Minimap';
 import { COINS, STATIONS, type StationId } from './layout';
 import { Car } from './Car';
-import { hud } from './runtime';
+import { CAMERA_MODES, hud, view } from './runtime';
 import { World } from './World';
 import { gameStore, useGame } from './store';
 import { isMuted, setMuted, sfx } from './sound';
@@ -331,6 +332,7 @@ function Intro({ onStart }: { onStart: () => void }) {
                 ['Shift', 'boost'],
                 ['Space', 'handbrake drift'],
                 ['E / Enter', 'open building'],
+                ['C · wheel', 'camera · zoom'],
                 ['R', 'reset car'],
                 ['Esc', 'close / exit'],
               ]
@@ -365,6 +367,8 @@ function Loading() {
 export default function Game({ onExit }: { onExit: () => void }) {
   const [started, setStarted] = useState(false);
   const [muted, setMutedState] = useState(isMuted());
+  const [camMode, setCamMode] = useState(view.mode);
+  useEffect(() => onCameraChange(() => setCamMode(view.mode)), []);
   const collected = useGame((s) => s.collected.length);
   const touch = isTouch();
 
@@ -411,6 +415,13 @@ export default function Game({ onExit }: { onExit: () => void }) {
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button
+            onClick={cycleCamera}
+            className="flex h-11 items-center gap-2 rounded-full border border-white/15 bg-black/45 px-4 text-sm backdrop-blur-md hover:bg-white/10"
+            title="Change camera (C)"
+          >
+            <Camera size={16} /> {CAMERA_MODES[camMode]}
+          </button>
+          <button
             onClick={() => {
               input.reset = true;
             }}
@@ -443,6 +454,7 @@ export default function Game({ onExit }: { onExit: () => void }) {
           <Prompt />
           <CoinToast />
           {touch && <Joystick />}
+          {!touch && <Minimap />}
           <div className="pointer-events-none absolute bottom-6 right-6 z-30 rounded-2xl border border-white/10 bg-black/45 px-5 py-3 text-right backdrop-blur-md">
             <p
               ref={(el) => {
@@ -456,7 +468,7 @@ export default function Game({ onExit }: { onExit: () => void }) {
           </div>
           {!touch && (
             <p className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2 font-mono text-xs text-white/40">
-              W/S drive · A/D steer · Shift boost · Space drift · E open · R reset · Esc exit
+              WASD drive · Shift boost · Space drift · E open · C camera · R reset
             </p>
           )}
         </>

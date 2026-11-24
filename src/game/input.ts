@@ -1,3 +1,5 @@
+import { view } from './runtime';
+
 /**
  * Mutable input state read every frame by the car. Keyboard and the on-screen
  * joystick both write here, so the car code doesn't care which.
@@ -20,6 +22,19 @@ export const input = {
 };
 
 const keys = new Set<string>();
+const camListeners = new Set<() => void>();
+
+export function cycleCamera() {
+  view.mode = (view.mode + 1) % 3;
+  view.zoom = 1;
+  camListeners.forEach((l) => l());
+}
+export function onCameraChange(cb: () => void) {
+  camListeners.add(cb);
+  return () => {
+    camListeners.delete(cb);
+  };
+}
 
 function recompute() {
   const left = keys.has('arrowleft') || keys.has('a');
@@ -45,6 +60,10 @@ export function bindKeyboard(onEscape: () => void) {
       if (!e.repeat) input.interact = true;
       return;
     }
+    if (k === 'c') {
+      if (!e.repeat) cycleCamera();
+      return;
+    }
     if (k === 'r') {
       if (!e.repeat) input.reset = true;
       return;
@@ -61,10 +80,16 @@ export function bindKeyboard(onEscape: () => void) {
     keys.clear();
     recompute();
   };
+  const wheel = (e: WheelEvent) => {
+    if ((e.target as HTMLElement).closest('[role="dialog"]')) return;
+    view.zoom = Math.min(1.9, Math.max(0.6, view.zoom * (1 + Math.sign(e.deltaY) * 0.08)));
+  };
   window.addEventListener('keydown', down);
   window.addEventListener('keyup', up);
   window.addEventListener('blur', blur);
+  window.addEventListener('wheel', wheel, { passive: true });
   return () => {
+    window.removeEventListener('wheel', wheel);
     window.removeEventListener('keydown', down);
     window.removeEventListener('keyup', up);
     window.removeEventListener('blur', blur);

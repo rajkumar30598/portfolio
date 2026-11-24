@@ -317,13 +317,20 @@ function Bush({ seed }: { seed: number }) {
 function Vegetation() {
   const refs = useRef<(THREE.Group | null)[]>([]);
   const fade = useRef<number[]>(TREES.map(() => 1));
-  // fade out plants that stand between the camera (south of the car) and the car
-  useFrame((_, d) => {
+  // fade out plants standing on the line between the camera and the car
+  useFrame(({ camera }, d) => {
+    const cx = camera.position.x;
+    const cz = camera.position.z;
+    const sx = playerPos.x - cx;
+    const sz = playerPos.z - cz;
+    const len2 = sx * sx + sz * sz || 1;
     TREES.forEach((t, i) => {
       const g = refs.current[i];
       if (!g) return;
-      const dz = t.z - playerPos.z;
-      const blocking = Math.abs(t.x - playerPos.x) < 3.6 && dz > -1 && dz < 12;
+      const u = THREE.MathUtils.clamp(((t.x - cx) * sx + (t.z - cz) * sz) / len2, 0, 1.08);
+      const px = cx + sx * u - t.x;
+      const pz = cz + sz * u - t.z;
+      const blocking = u > 0.02 && camera.position.y < 40 && px * px + pz * pz < 3.4 * 3.4 * t.s;
       const prev = fade.current[i];
       const next = THREE.MathUtils.damp(prev, blocking ? 0.18 : 1, 8, d);
       fade.current[i] = next;

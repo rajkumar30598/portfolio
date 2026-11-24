@@ -4,6 +4,13 @@ import { START } from './layout';
 /** Car world position, written by the car every frame and read by the world (e.g. coin magnets). */
 export const playerPos = new THREE.Vector3(START.x, 0, START.z);
 
+/** Car heading (radians), for the minimap arrow. */
+export const playerYaw = { value: START.yaw };
+
+/** Camera: 0 = chase (behind the car), 1 = top-down follow, 2 = island overview. Zoom via mouse wheel. */
+export const CAMERA_MODES = ['Chase', 'Top-down', 'Overview'] as const;
+export const view = { mode: 0, zoom: 1 };
+
 /** Speedometer element; the car writes its text directly to avoid React re-renders every frame. */
 export const hud = { speed: null as HTMLElement | null };
 

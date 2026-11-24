@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { useTheme } from '@/lib/theme';
 import { input } from './input';
 import { COINS, COLLIDERS, DRIVE_RADIUS, START, STATIONS, groundHeight } from './layout';
-import { hud, playerPos, spawnPuff } from './runtime';
+import { hud, playerPos, playerYaw, spawnPuff, view } from './runtime';
 import { gameStore } from './store';
 import { sfx } from './sound';
 
@@ -256,24 +256,48 @@ export function Car() {
     }
     if (hud.speed) hud.speed.textContent = String(Math.round(Math.abs(s.speed) * 7));
 
-    // ---- three-quarter follow camera (doesn't rotate with the car) ----
+    // ---- camera ----
+    playerYaw.value = s.yaw;
     const cam = state.camera as THREE.PerspectiveCamera;
-    const zoom = 1 + Math.min(Math.abs(s.speed) / BOOST, 1) * 0.18;
-    // look slightly ahead of the car in its direction of travel
-    const ahead = THREE.MathUtils.clamp(s.speed / MAX, -1, 1) * 2.5;
-    const lx = s.x + Math.sin(s.yaw) * ahead;
-    const lz = s.z + Math.cos(s.yaw) * ahead;
-    cam.position.x = THREE.MathUtils.damp(cam.position.x, lx + 0, 4, dtAll);
-    cam.position.y = THREE.MathUtils.damp(cam.position.y, 13.5 * zoom + s.y * 0.5, 4, dtAll);
-    cam.position.z = THREE.MathUtils.damp(cam.position.z, lz + 12.5 * zoom, 4, dtAll);
+    const z = view.zoom;
+    const fwd = Math.max(s.speed, 0);
+    let targetFov = 50;
+    if (view.mode === 0) {
+      // chase: low behind the car, looking ahead so you see where you're going
+      s.camYaw += Math.atan2(Math.sin(s.yaw - s.camYaw), Math.cos(s.yaw - s.camYaw)) * (1 - Math.exp(-2.6 * dtAll));
+      const back = (8.2 + fwd * 0.12) * z;
+      const tx = s.x - Math.sin(s.camYaw) * back;
+      const tz = s.z - Math.cos(s.camYaw) * back;
+      cam.position.x = THREE.MathUtils.damp(cam.position.x, tx, 5, dtAll);
+      cam.position.y = THREE.MathUtils.damp(cam.position.y, 3.4 * z + s.y * 0.7 + 0.6, 4, dtAll);
+      cam.position.z = THREE.MathUtils.damp(cam.position.z, tz, 5, dtAll);
+      look.set(s.x + Math.sin(s.camYaw) * 7, s.y * 0.8 + 1.3, s.z + Math.cos(s.camYaw) * 7);
+      targetFov = 58 + fwd * 0.45 + (boost ? 6 : 0);
+    } else if (view.mode === 1) {
+      // top-down follow: fixed angle, never rotates with the car
+      const ahead = THREE.MathUtils.clamp(s.speed / MAX, -1, 1) * 2.5;
+      const lx = s.x + Math.sin(s.yaw) * ahead;
+      const lz = s.z + Math.cos(s.yaw) * ahead;
+      cam.position.x = THREE.MathUtils.damp(cam.position.x, lx, 4, dtAll);
+      cam.position.y = THREE.MathUtils.damp(cam.position.y, 14 * z + s.y * 0.5, 4, dtAll);
+      cam.position.z = THREE.MathUtils.damp(cam.position.z, lz + 13 * z, 4, dtAll);
+      look.set(lx, s.y * 0.5 + 0.6, lz);
+      targetFov = 48;
+    } else {
+      // overview: the whole island, still drivable
+      cam.position.x = THREE.MathUtils.damp(cam.position.x, s.x * 0.25, 2, dtAll);
+      cam.position.y = THREE.MathUtils.damp(cam.position.y, 52 * z, 2, dtAll);
+      cam.position.z = THREE.MathUtils.damp(cam.position.z, 46 * z + s.z * 0.25, 2, dtAll);
+      look.set(s.x * 0.25, 0, s.z * 0.25 - 2);
+      targetFov = 50;
+    }
     if (s.shake > 0) {
       cam.position.x += (Math.random() - 0.5) * s.shake * 0.6;
       cam.position.y += (Math.random() - 0.5) * s.shake * 0.6;
       s.shake = Math.max(0, s.shake - dtAll * 2.5);
     }
-    look.set(cam.position.x, s.y * 0.5 + 0.6, cam.position.z - 12.5 * zoom);
     cam.lookAt(look);
-    s.fov = THREE.MathUtils.damp(s.fov, 45 + (boost ? 4 : 0), 3, dtAll);
+    s.fov = THREE.MathUtils.damp(s.fov, targetFov, 3, dtAll);
     if (Math.abs(cam.fov - s.fov) > 0.05) {
       cam.fov = s.fov;
       cam.updateProjectionMatrix();
