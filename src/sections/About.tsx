@@ -110,7 +110,7 @@ export function About() {
             </div>
 
             <div className="about-photo relative aspect-[4/5] w-full max-w-md self-start overflow-hidden rounded-[2rem] lg:justify-self-end">
-              <img src="/images/profile.jpg" alt="Rajkumar V" className="h-[112%] w-full -translate-y-[6%] object-cover" />
+              <img src="/images/rajkumar.jpg" alt="Rajkumar V" className="h-[112%] w-full -translate-y-[6%] object-cover" />
               <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
               <span className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-sm font-medium text-white backdrop-blur-md">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand" />

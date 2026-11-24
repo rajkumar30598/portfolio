@@ -26,7 +26,7 @@ function PanelBody({ id }: { id: StationId }) {
   if (id === 'about') {
     return (
       <div className="grid gap-6 sm:grid-cols-[180px_1fr]">
-        <img src="/images/profile.jpg" alt="Rajkumar V" className="aspect-[4/5] w-full rounded-2xl object-cover" />
+        <img src="/images/rajkumar.jpg" alt="Rajkumar V" className="aspect-[4/5] w-full rounded-2xl object-cover" />
         <div>
           <p className="mb-1 text-xs uppercase tracking-[0.25em] text-brand">About me</p>
           <h2 className="mb-4 font-display text-5xl leading-none text-white">Hi, I'm Rajkumar</h2>
