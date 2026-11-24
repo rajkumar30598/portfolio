@@ -1,199 +1,213 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
-import { CuboidCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { CuboidCollider, RigidBody, useBeforePhysicsStep, useRapier, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
-import { useTheme } from '@/lib/theme';
 import { input } from './input';
-import { COINS, COLLIDERS, DRIVE_RADIUS, START, STATIONS, groundHeight } from './layout';
+import { COINS, START, STATIONS } from './layout';
+import { allDone } from './objectives';
 import { hud, playerPos, playerYaw, spawnPuff, view } from './runtime';
 import { gameStore } from './store';
-import { sfx } from './sound';
+import { setEngine, sfx } from './sound';
 
-const CAR_R = 1.15; // collision radius
-const GRAVITY = 26;
-const MAX = 17;
-const BOOST = 26;
-const REVERSE = 8;
+/* ---------- tuning ---------- */
+const ENGINE = 34; // engine force per driven wheel
+const BOOST = 1.6;
+const MAX_SPEED = 20; // m/s (~ 72 km/h on the dial below)
+const MAX_BOOST_SPEED = 28;
+const MAX_REVERSE = 8;
+const BRAKE = 0.9;
+const MAX_STEER = 0.55;
+const WHEEL_RADIUS = 0.42;
+const REST = 0.32;
 
+/** Wheel mount points in chassis space (+z is forward). */
+const WHEELS: { pos: [number, number, number]; front: boolean }[] = [
+  { pos: [-0.88, -0.12, 1.15], front: true },
+  { pos: [0.88, -0.12, 1.15], front: true },
+  { pos: [-0.88, -0.12, -1.15], front: false },
+  { pos: [0.88, -0.12, -1.15], front: false },
+];
+
+const PAINT = '#d9603d';
+const CREAM = '#f6ead8';
+const INK = '#1b1714';
+
+const tmpQ = new THREE.Quaternion();
+const tmpE = new THREE.Euler();
+const fwd = new THREE.Vector3();
+const up = new THREE.Vector3();
 const look = new THREE.Vector3();
-const quat = new THREE.Quaternion();
-const euler = new THREE.Euler();
+const camGoal = new THREE.Vector3();
 
 export function Car() {
-  const theme = useTheme();
-  const paint = `rgb(${theme.brand.join(',')})`;
-
-  const root = useRef<THREE.Group>(null);
-  const rb = useRef<RapierRigidBody>(null);
-  const lastBonk = useRef(0);
-  const body = useRef<THREE.Group>(null);
-  const wheels = useRef<(THREE.Group | null)[]>([]);
-  const frontPivots = useRef<(THREE.Group | null)[]>([]);
+  const { world } = useRapier();
+  const body = useRef<RapierRigidBody>(null);
+  const controller = useRef<ReturnType<typeof world.createVehicleController> | null>(null);
+  const wheelRefs = useRef<(THREE.Group | null)[]>([]);
+  const spinRefs = useRef<(THREE.Group | null)[]>([]);
   const brakeMat = useRef<THREE.MeshStandardMaterial>(null);
-  const spot = useRef<THREE.SpotLight>(null);
-  const spotTarget = useRef<THREE.Object3D>(null);
   const sim = useRef({
-    x: START.x,
-    z: START.z,
-    y: 0,
-    vy: 0,
-    yaw: START.yaw,
-    speed: 0,
-    vx: 0,
-    vz: 0,
     steer: 0,
-    wheelRot: 0,
-    shake: 0,
-    grounded: true,
+    speed: 0,
+    airTime: 0,
+    upsideDown: 0,
     camYaw: START.yaw,
-    fov: 55,
+    shake: 0,
     puffTimer: 0,
+    lastBonk: 0,
+    intro: 0,
   });
 
+  // build the ray-cast vehicle on the chassis body
   useEffect(() => {
-    if (spot.current && spotTarget.current) spot.current.target = spotTarget.current;
-  }, []);
-
-  // dev-only test hook: place the car precisely (stripped from production builds)
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const w = window as unknown as { __placeCar?: (x: number, z: number, yaw: number) => void };
-    w.__placeCar = (x, z, yaw) => Object.assign(sim.current, { x, z, yaw, camYaw: yaw, speed: 0, vx: 0, vz: 0, y: 0, vy: 0 });
-    return () => {
-      delete w.__placeCar;
-    };
-  }, []);
-
-  useFrame((state, delta) => {
-    const s = sim.current;
-    const g = root.current;
-    if (!g) return;
-    const dtAll = Math.min(delta, 0.1);
-    const steps = Math.ceil(dtAll / 0.02);
-    const dt = dtAll / steps;
-
-    if (input.reset) {
-      input.reset = false;
-      Object.assign(s, { x: START.x, z: START.z, y: 0, vy: 0, yaw: START.yaw, speed: 0, vx: 0, vz: 0, camYaw: START.yaw });
-      gameStore.resetProps();
+    const chassis = body.current;
+    if (!chassis) return;
+    const c = world.createVehicleController(chassis);
+    c.indexUpAxis = 1;
+    c.setIndexForwardAxis = 2;
+    WHEELS.forEach((w, i) => {
+      c.addWheel({ x: w.pos[0], y: w.pos[1], z: w.pos[2] }, { x: 0, y: -1, z: 0 }, { x: -1, y: 0, z: 0 }, REST, WHEEL_RADIUS);
+      c.setWheelSuspensionStiffness(i, 26);
+      c.setWheelSuspensionCompression(i, 2.4);
+      c.setWheelSuspensionRelaxation(i, 2.0);
+      c.setWheelMaxSuspensionTravel(i, 0.35);
+      c.setWheelMaxSuspensionForce(i, 400);
+      c.setWheelFrictionSlip(i, w.front ? 2.6 : 2.3);
+      c.setWheelSideFrictionStiffness(i, 1);
+    });
+    controller.current = c;
+    // dev-only hook for scripted testing (stripped from production builds)
+    if (import.meta.env.DEV) {
+      (window as unknown as { __car?: unknown }).__car = {
+        place: (x: number, z: number, yaw: number) => placeCar(chassis, x, z, yaw),
+        state: () => ({ p: chassis.translation(), v: chassis.linvel(), speed: c.currentVehicleSpeed() }),
+      };
     }
+    return () => {
+      world.removeVehicleController(c);
+      controller.current = null;
+    };
+  }, [world]);
 
+  // forces go in before every physics step
+  useBeforePhysicsStep((w) => {
+    const c = controller.current;
+    if (!c) return;
+    const s = sim.current;
     const frozen = input.frozen;
     const throttle = frozen ? 0 : -input.z;
     const steerIn = frozen ? 0 : -input.x;
     const boost = !frozen && input.run;
     const handbrake = !frozen && input.handbrake;
-    let drifting = false;
+    const speed = c.currentVehicleSpeed();
+    s.speed = speed;
 
-    for (let i = 0; i < steps; i++) {
-      // ---- engine / brakes ----
-      if (s.grounded) {
-        if (throttle > 0) s.speed += (s.speed < 0 ? 40 : boost ? 26 : 16) * throttle * dt;
-        else if (throttle < 0) s.speed -= (s.speed > 0 ? 38 : 14) * -throttle * dt;
-        else s.speed -= Math.sign(s.speed) * Math.min(Math.abs(s.speed), 7 * dt);
-        if (handbrake) s.speed *= 1 - 1.2 * dt;
+    let engine = 0;
+    let brake = 0.04; // rolling resistance
+    const top = boost ? MAX_BOOST_SPEED : MAX_SPEED;
+    if (throttle > 0) {
+      if (speed < -0.6) brake = BRAKE;
+      else if (speed < top) engine = ENGINE * (boost ? BOOST : 1) * throttle;
+    } else if (throttle < 0) {
+      if (speed > 0.6) brake = BRAKE;
+      else if (speed > -MAX_REVERSE) engine = -ENGINE * 0.6;
+    }
+    if (frozen) brake = 2;
+
+    // steering eases in and gets gentler at speed
+    s.steer += (steerIn - s.steer) * Math.min(1, w.timestep * 9);
+    const steer = s.steer * MAX_STEER * (1 - Math.min(Math.abs(speed) / 45, 0.55));
+
+    WHEELS.forEach((wh, i) => {
+      if (wh.front) c.setWheelSteering(i, steer);
+      c.setWheelEngineForce(i, wh.front ? 0 : engine);
+      c.setWheelBrake(i, handbrake && !wh.front ? 1.6 : brake);
+      // looser rear grip on the handbrake = drift
+      c.setWheelFrictionSlip(i, wh.front ? 2.6 : handbrake ? 1.1 : 2.3);
+    });
+    c.updateVehicle(w.timestep);
+  });
+
+  useFrame((state, delta) => {
+    const chassis = body.current;
+    const c = controller.current;
+    if (!chassis || !c) return;
+    const s = sim.current;
+    const dt = Math.min(delta, 0.1);
+
+    const p = chassis.translation();
+    const r = chassis.rotation();
+    tmpQ.set(r.x, r.y, r.z, r.w);
+    fwd.set(0, 0, 1).applyQuaternion(tmpQ);
+    up.set(0, 1, 0).applyQuaternion(tmpQ);
+    const yaw = Math.atan2(fwd.x, fwd.z);
+    playerPos.set(p.x, p.y, p.z);
+    playerYaw.value = yaw;
+    const speed = s.speed;
+    const absSpeed = Math.abs(speed);
+
+    // ---- reset (R), falling off the board, or stuck upside down ----
+    s.upsideDown = up.y < 0.25 && absSpeed < 2 ? s.upsideDown + dt : 0;
+    if (input.reset || p.y < -12 || s.upsideDown > 1.2) {
+      if (p.y < -12) gameStore.toast('Back on the board!');
+      if (input.reset) gameStore.resetProps();
+      input.reset = false;
+      placeCar(chassis, START.x, START.z, START.yaw);
+      s.upsideDown = 0;
+      return;
+    }
+
+    // ---- wheels: suspension travel, spin and steering ----
+    let grounded = 0;
+    WHEELS.forEach((w, i) => {
+      const g = wheelRefs.current[i];
+      const spin = spinRefs.current[i];
+      const susp = c.wheelSuspensionLength(i) ?? REST;
+      if (g) {
+        g.position.set(w.pos[0], w.pos[1] - susp, w.pos[2]);
+        g.rotation.y = c.wheelSteering(i) ?? 0;
       }
-      const max = boost ? BOOST : MAX;
-      if (s.speed > max) s.speed = THREE.MathUtils.damp(s.speed, max, 2, dt);
-      if (s.speed < -REVERSE) s.speed = -REVERSE;
-      if (frozen) s.speed = THREE.MathUtils.damp(s.speed, 0, 8, dt);
+      if (spin) spin.rotation.x = c.wheelRotation(i) ?? 0;
+      if (c.wheelIsInContact(i)) grounded++;
+    });
 
-      // ---- steering ----
-      s.steer = THREE.MathUtils.damp(s.steer, steerIn, 9, dt);
-      const turn = s.steer * 2.25 * THREE.MathUtils.clamp(s.speed / 7, -1, 1) * (handbrake ? 1.7 : 1);
-      if (s.grounded) s.yaw += turn * dt;
-
-      // ---- grip: velocity slides toward the heading (less grip = drift) ----
-      const fx = Math.sin(s.yaw);
-      const fz = Math.cos(s.yaw);
-      const grip = !s.grounded ? 0.4 : handbrake ? 1.8 : 8;
-      s.vx = THREE.MathUtils.damp(s.vx, fx * s.speed, grip, dt);
-      s.vz = THREE.MathUtils.damp(s.vz, fz * s.speed, grip, dt);
-      if (Math.hypot(s.vx - fx * s.speed, s.vz - fz * s.speed) > 3.2) drifting = true;
-
-      let nx = s.x + s.vx * dt;
-      let nz = s.z + s.vz * dt;
-
-      // ---- collisions with buildings / trees: push out and bounce ----
-      if (s.y < 3) {
-        for (const c of COLLIDERS) {
-          const dx = nx - c.x;
-          const dz = nz - c.z;
-          const d = Math.hypot(dx, dz);
-          const min = c.r + CAR_R;
-          if (d < min && d > 1e-4) {
-            const nxn = dx / d;
-            const nzn = dz / d;
-            nx = c.x + nxn * min;
-            nz = c.z + nzn * min;
-            const impact = -(s.vx * nxn + s.vz * nzn);
-            if (impact > 0) {
-              s.vx += nxn * impact * 1.3;
-              s.vz += nzn * impact * 1.3;
-              s.speed *= impact > 6 ? -0.25 : 0.6;
-              if (impact > 5) {
-                s.shake = Math.min(1, impact / 14);
-                sfx.crash();
-              }
-            }
-          }
-        }
+    // ---- airtime + landing ----
+    if (grounded === 0) s.airTime += dt;
+    else {
+      if (s.airTime > 0.45) {
+        gameStore.markJump();
+        sfx.land();
+        s.shake = Math.min(0.7, s.airTime * 0.6);
+        for (let k = 0; k < 8; k++) spawnPuff(p.x, 0.3, p.z, 1.5);
       }
-      // ---- island wall ----
-      const rr = Math.hypot(nx, nz);
-      if (rr > DRIVE_RADIUS) {
-        const ux = nx / rr;
-        const uz = nz / rr;
-        nx = ux * DRIVE_RADIUS;
-        nz = uz * DRIVE_RADIUS;
-        const out = s.vx * ux + s.vz * uz;
-        if (out > 0) {
-          s.vx -= ux * out * 1.5;
-          s.vz -= uz * out * 1.5;
-          s.speed *= 0.4;
-          if (out > 6) {
-            s.shake = Math.min(1, out / 14);
-            sfx.crash();
-          }
-        }
-      }
-      s.x = nx;
-      s.z = nz;
+      s.airTime = 0;
+    }
 
-      // ---- ramps & gravity ----
-      const gh = groundHeight(s.x, s.z);
-      if (s.grounded) {
-        const climb = (gh - s.y) / dt;
-        if (gh >= s.y - 0.05) {
-          s.vy = Math.min(climb, 12);
-          s.y = gh;
-        } else {
-          // ground fell away (end of a ramp): we're airborne with our climb speed
-          s.grounded = false;
-        }
-      } else {
-        s.vy -= GRAVITY * dt;
-        s.y += s.vy * dt;
-        if (s.y <= gh) {
-          if (s.vy < -6) {
-            s.shake = Math.min(0.8, -s.vy / 25);
-            sfx.land();
-            for (let p = 0; p < 6; p++) spawnPuff(s.x, 0.3, s.z, 1.4);
-          }
-          s.y = gh;
-          s.vy = 0;
-          s.grounded = true;
-        }
+    // ---- dust when drifting, launching or boosting ----
+    s.puffTimer -= dt;
+    const v = chassis.linvel();
+    const sideSlip = Math.abs(v.x * fwd.z - v.z * fwd.x);
+    const launching = input.z < -0.5 && absSpeed < 6 && grounded > 2;
+    if (s.puffTimer <= 0 && grounded > 2 && (sideSlip > 3 || launching || (input.run && absSpeed > 15))) {
+      s.puffTimer = 0.05;
+      for (const side of [-1, 1]) {
+        spawnPuff(p.x - fwd.x * 1.3 + fwd.z * 0.8 * side, 0.25, p.z - fwd.z * 1.3 - fwd.x * 0.8 * side, sideSlip > 3 ? 1.3 : 0.8);
       }
     }
 
-    const carSpeed = Math.hypot(s.vx, s.vz);
+    // ---- brake lights + HUD + engine sound ----
+    if (brakeMat.current) {
+      const braking = (input.z > 0.5 && speed > 0.5) || input.handbrake;
+      brakeMat.current.emissiveIntensity = THREE.MathUtils.damp(brakeMat.current.emissiveIntensity, braking ? 4 : 0.6, 14, dt);
+    }
+    if (hud.speed) hud.speed.textContent = String(Math.round(absSpeed * 3.6));
+    setEngine(Math.min(absSpeed / MAX_BOOST_SPEED, 1), input.z < -0.3 && !input.frozen);
 
-    // ---- coins (3D distance so floating ones need a jump) ----
-    COINS.forEach((c, i) => {
-      const cy = c.y ?? 1;
-      if (Math.hypot(s.x - c.at[0], s.z - c.at[1]) < 2.1 && Math.abs(s.y + 0.8 - cy) < 1.7 && gameStore.collect(i)) {
+    // ---- coins ----
+    COINS.forEach((coin, i) => {
+      const cy = coin.y ?? 1;
+      if (Math.hypot(p.x - coin.at[0], p.z - coin.at[1]) < 2.2 && Math.abs(p.y + 0.4 - cy) < 1.8 && gameStore.collect(i)) {
         if (gameStore.get().won) sfx.win();
         else sfx.coin();
       }
@@ -203,7 +217,7 @@ export function Car() {
     let near: (typeof STATIONS)[number] | null = null;
     let best = Infinity;
     for (const st of STATIONS) {
-      const d = Math.hypot(s.x - st.at[0], s.z - st.at[1]);
+      const d = Math.hypot(p.x - st.at[0], p.z - st.at[1]);
       if (d < st.radius && d < best) {
         best = d;
         near = st;
@@ -217,222 +231,151 @@ export function Car() {
         sfx.open();
       }
     }
-
-    // ---- dust ----
-    s.puffTimer -= dtAll;
-    const spinning = s.grounded && throttle > 0.5 && Math.abs(s.speed) < 9;
-    if (s.puffTimer <= 0 && s.grounded && (drifting || spinning || (boost && carSpeed > 14))) {
-      s.puffTimer = 0.04;
-      const bx = Math.sin(s.yaw);
-      const bz = Math.cos(s.yaw);
-      for (const side of [-1, 1]) {
-        spawnPuff(s.x - bx * 1.3 + bz * 0.75 * side, 0.25, s.z - bz * 1.3 - bx * 0.75 * side, drifting ? 1.2 : 0.8);
-      }
+    if (!gameStore.get().tourDone && allDone(gameStore.get())) {
+      gameStore.finishTour();
+      sfx.win();
     }
-
-    // ---- visuals ----
-    // drive the physics body so it shoves crates, pins and dominoes
-    rb.current?.setNextKinematicTranslation({ x: s.x, y: s.y, z: s.z });
-    rb.current?.setNextKinematicRotation(quat.setFromEuler(euler.set(0, s.yaw, 0)));
-    playerPos.set(s.x, s.y, s.z);
-    if (body.current) {
-      const accel = s.grounded ? throttle * 0.04 : 0;
-      const airPitch = s.grounded ? 0 : THREE.MathUtils.clamp(-s.vy * 0.03, -0.4, 0.4);
-      const rampPitch = s.grounded ? -Math.atan2(s.vy, Math.max(Math.abs(s.speed), 1)) : 0;
-      body.current.rotation.x = THREE.MathUtils.damp(body.current.rotation.x, -accel + airPitch + rampPitch, 8, dtAll);
-      body.current.rotation.z = THREE.MathUtils.damp(body.current.rotation.z, -s.steer * THREE.MathUtils.clamp(s.speed / MAX, -1, 1) * 0.07, 6, dtAll);
-      body.current.position.y = Math.sin(state.clock.elapsedTime * 30) * 0.008 * Math.min(carSpeed / 5, 1);
-    }
-    s.wheelRot += (s.speed * dtAll) / 0.42;
-    wheels.current.forEach((w) => {
-      if (w) w.rotation.x = s.wheelRot;
-    });
-    frontPivots.current.forEach((p) => {
-      if (p) p.rotation.y = s.steer * 0.5;
-    });
-    if (brakeMat.current) {
-      const braking = (throttle < 0 && s.speed > 0.5) || handbrake;
-      brakeMat.current.emissiveIntensity = THREE.MathUtils.damp(brakeMat.current.emissiveIntensity, braking ? 4 : 0.8, 14, dtAll);
-    }
-    if (hud.speed) hud.speed.textContent = String(Math.round(Math.abs(s.speed) * 7));
 
     // ---- camera ----
-    playerYaw.value = s.yaw;
     const cam = state.camera as THREE.PerspectiveCamera;
     const z = view.zoom;
-    const fwd = Math.max(s.speed, 0);
-    let targetFov = 50;
+    s.intro = Math.min(1, s.intro + dt / 2.2); // opening fly-in
+    const follow = 2 + (1 - s.intro) * -1.5;
     if (view.mode === 0) {
-      // chase: low behind the car, looking ahead so you see where you're going
-      s.camYaw += Math.atan2(Math.sin(s.yaw - s.camYaw), Math.cos(s.yaw - s.camYaw)) * (1 - Math.exp(-2.6 * dtAll));
-      const back = (8.2 + fwd * 0.12) * z;
-      const tx = s.x - Math.sin(s.camYaw) * back;
-      const tz = s.z - Math.cos(s.camYaw) * back;
-      cam.position.x = THREE.MathUtils.damp(cam.position.x, tx, 5, dtAll);
-      cam.position.y = THREE.MathUtils.damp(cam.position.y, 3.4 * z + s.y * 0.7 + 0.6, 4, dtAll);
-      cam.position.z = THREE.MathUtils.damp(cam.position.z, tz, 5, dtAll);
-      look.set(s.x + Math.sin(s.camYaw) * 7, s.y * 0.8 + 1.3, s.z + Math.cos(s.camYaw) * 7);
-      targetFov = 58 + fwd * 0.45 + (boost ? 6 : 0);
+      // chase: eases behind the car's direction of travel
+      s.camYaw += Math.atan2(Math.sin(yaw - s.camYaw), Math.cos(yaw - s.camYaw)) * (1 - Math.exp(-2.4 * dt));
+      const back = (8.5 + Math.max(speed, 0) * 0.12) * z;
+      camGoal.set(p.x - Math.sin(s.camYaw) * back, p.y + 3.6 * z + 0.6, p.z - Math.cos(s.camYaw) * back);
+      look.set(p.x + Math.sin(s.camYaw) * 6, p.y + 1, p.z + Math.cos(s.camYaw) * 6);
     } else if (view.mode === 1) {
-      // top-down follow: fixed angle, never rotates with the car
-      const ahead = THREE.MathUtils.clamp(s.speed / MAX, -1, 1) * 2.5;
-      const lx = s.x + Math.sin(s.yaw) * ahead;
-      const lz = s.z + Math.cos(s.yaw) * ahead;
-      cam.position.x = THREE.MathUtils.damp(cam.position.x, lx, 4, dtAll);
-      cam.position.y = THREE.MathUtils.damp(cam.position.y, 14 * z + s.y * 0.5, 4, dtAll);
-      cam.position.z = THREE.MathUtils.damp(cam.position.z, lz + 13 * z, 4, dtAll);
-      look.set(lx, s.y * 0.5 + 0.6, lz);
-      targetFov = 48;
+      camGoal.set(p.x, p.y + 15 * z, p.z + 13 * z);
+      look.set(p.x, p.y, p.z);
     } else {
-      // overview: the whole island, still drivable
-      cam.position.x = THREE.MathUtils.damp(cam.position.x, s.x * 0.25, 2, dtAll);
-      cam.position.y = THREE.MathUtils.damp(cam.position.y, 52 * z, 2, dtAll);
-      cam.position.z = THREE.MathUtils.damp(cam.position.z, 46 * z + s.z * 0.25, 2, dtAll);
-      look.set(s.x * 0.25, 0, s.z * 0.25 - 2);
-      targetFov = 50;
+      camGoal.set(p.x * 0.25, 52 * z, 46 * z + p.z * 0.25);
+      look.set(p.x * 0.25, 0, p.z * 0.25 - 2);
     }
+    const k = 1 - Math.exp(-follow * 2.2 * dt);
+    cam.position.lerp(camGoal, k);
     if (s.shake > 0) {
-      cam.position.x += (Math.random() - 0.5) * s.shake * 0.6;
-      cam.position.y += (Math.random() - 0.5) * s.shake * 0.6;
-      s.shake = Math.max(0, s.shake - dtAll * 2.5);
+      cam.position.x += (Math.random() - 0.5) * s.shake * 0.5;
+      cam.position.y += (Math.random() - 0.5) * s.shake * 0.5;
+      s.shake = Math.max(0, s.shake - dt * 2.5);
     }
     cam.lookAt(look);
-    s.fov = THREE.MathUtils.damp(s.fov, targetFov, 3, dtAll);
-    if (Math.abs(cam.fov - s.fov) > 0.05) {
-      cam.fov = s.fov;
+    const fov = view.mode === 0 ? 55 + absSpeed * 0.5 : 48;
+    if (Math.abs(cam.fov - fov) > 0.05) {
+      cam.fov = THREE.MathUtils.damp(cam.fov, fov, 3, dt);
       cam.updateProjectionMatrix();
     }
   });
 
-  const wheelPos: [number, number, number][] = [
-    [-0.9, 0.44, 1.2],
-    [0.9, 0.44, 1.2],
-    [-0.9, 0.44, -1.2],
-    [0.9, 0.44, -1.2],
-  ];
-  const trim = '#11141c';
-
   return (
     <RigidBody
-      ref={rb}
-      type="kinematicPosition"
+      ref={body}
       colliders={false}
-      position={[START.x, 0, START.z]}
+      position={[START.x, 1.4, START.z]}
       rotation={[0, START.yaw, 0]}
+      canSleep={false}
+      angularDamping={1.4}
+      linearDamping={0.05}
+      ccd
       onCollisionEnter={({ other }) => {
-        // bump sound + a little drag when we hit something loose
-        if (!other.rigidBody?.isDynamic()) return;
         const now = performance.now();
-        if (now - lastBonk.current > 90) {
-          lastBonk.current = now;
-          sfx.bonk();
+        if (now - sim.current.lastBonk < 120) return;
+        sim.current.lastBonk = now;
+        if (other.rigidBody?.isDynamic()) sfx.bonk();
+        else if (Math.abs(sim.current.speed) > 7) {
+          sfx.crash();
+          sim.current.shake = 0.5;
         }
-        sim.current.speed *= 0.93;
       }}
     >
-      <CuboidCollider args={[0.95, 0.45, 2]} position={[0, 0.8, 0]} />
-    <group ref={root}>
-      <group ref={body}>
-        {/* glossy body */}
-        <RoundedBox args={[1.86, 0.62, 3.9]} radius={0.24} smoothness={5} position={[0, 0.78, 0]} castShadow>
-          <meshPhysicalMaterial color={paint} metalness={0.45} roughness={0.22} clearcoat={1} clearcoatRoughness={0.04} envMapIntensity={1.4} />
+      {/* chassis collider; low and wide so it doesn't tip easily */}
+      <CuboidCollider args={[0.92, 0.32, 1.78]} position={[0, 0.12, 0]} density={1.6} friction={0.4} />
+
+      {/* ---- toy car body ---- */}
+      <group position={[0, 0.06, 0]}>
+        <RoundedBox args={[1.9, 0.62, 3.6]} radius={0.28} smoothness={6} position={[0, 0.25, 0]} castShadow receiveShadow>
+          <meshStandardMaterial color={PAINT} roughness={0.42} />
         </RoundedBox>
-        {/* cabin: glass greenhouse with a painted roof */}
-        <RoundedBox args={[1.56, 0.58, 2.0]} radius={0.22} smoothness={5} position={[0, 1.3, -0.3]} castShadow>
-          <meshPhysicalMaterial color="#0c1a2e" metalness={0.2} roughness={0.04} clearcoat={1} envMapIntensity={2} />
+        {/* cream cabin with dark windows */}
+        <RoundedBox args={[1.62, 0.66, 1.75]} radius={0.3} smoothness={6} position={[0, 0.82, -0.25]} castShadow>
+          <meshStandardMaterial color={CREAM} roughness={0.5} />
         </RoundedBox>
-        <RoundedBox args={[1.5, 0.1, 1.6]} radius={0.05} position={[0, 1.6, -0.4]}>
-          <meshPhysicalMaterial color={paint} metalness={0.45} roughness={0.22} clearcoat={1} />
+        <RoundedBox args={[1.66, 0.38, 1.8]} radius={0.16} smoothness={4} position={[0, 0.86, -0.25]}>
+          <meshStandardMaterial color={INK} roughness={0.2} metalness={0.3} />
         </RoundedBox>
-        {/* white racing stripes */}
-        {[-0.2, 0.2].map((x) => (
-          <mesh key={x} position={[x, 1.095, 1.05]}>
-            <boxGeometry args={[0.14, 0.01, 1.6]} />
-            <meshStandardMaterial color="#f5f7fb" />
-          </mesh>
-        ))}
-        {/* bumpers */}
-        <RoundedBox args={[1.9, 0.26, 0.3]} radius={0.1} position={[0, 0.5, 1.92]}>
-          <meshStandardMaterial color={trim} roughness={0.5} />
-        </RoundedBox>
-        <RoundedBox args={[1.9, 0.26, 0.3]} radius={0.1} position={[0, 0.5, -1.92]}>
-          <meshStandardMaterial color={trim} roughness={0.5} />
-        </RoundedBox>
-        {/* grille */}
-        <mesh position={[0, 0.72, 1.96]}>
-          <boxGeometry args={[0.8, 0.16, 0.02]} />
-          <meshStandardMaterial color={trim} />
+        {/* racing stripe */}
+        <mesh position={[0, 0.565, 1.05]}>
+          <boxGeometry args={[0.32, 0.02, 1.3]} />
+          <meshStandardMaterial color={CREAM} />
         </mesh>
-        {/* mirrors */}
-        {[-1, 1].map((side) => (
-          <RoundedBox key={side} args={[0.22, 0.14, 0.24]} radius={0.05} position={[side * 0.98, 1.22, 0.55]}>
-            <meshPhysicalMaterial color={paint} clearcoat={1} roughness={0.25} />
+        {/* bumpers */}
+        {[1.82, -1.82].map((zz) => (
+          <RoundedBox key={zz} args={[1.96, 0.24, 0.26]} radius={0.1} position={[0, 0.02, zz]} castShadow>
+            <meshStandardMaterial color={INK} roughness={0.6} />
           </RoundedBox>
-        ))}
-        {/* spoiler */}
-        <RoundedBox args={[1.7, 0.07, 0.4]} radius={0.03} position={[0, 1.3, -1.78]} castShadow>
-          <meshStandardMaterial color={trim} />
-        </RoundedBox>
-        {[-0.6, 0.6].map((x) => (
-          <mesh key={x} position={[x, 1.17, -1.74]}>
-            <boxGeometry args={[0.07, 0.22, 0.12]} />
-            <meshStandardMaterial color={trim} />
-          </mesh>
         ))}
         {/* headlights */}
-        {[-0.62, 0.62].map((x) => (
-          <RoundedBox key={x} args={[0.42, 0.14, 0.06]} radius={0.04} position={[x, 0.86, 1.94]}>
-            <meshStandardMaterial color="#ffffff" emissive="#fff6dc" emissiveIntensity={2.2} />
-          </RoundedBox>
+        {[-0.6, 0.6].map((x) => (
+          <mesh key={x} position={[x, 0.32, 1.79]} rotation-x={Math.PI / 2}>
+            <cylinderGeometry args={[0.15, 0.15, 0.06, 20]} />
+            <meshStandardMaterial color="#fffaf0" emissive="#ffe9c2" emissiveIntensity={1.6} />
+          </mesh>
         ))}
         {/* brake lights */}
-        <mesh position={[0, 0.88, -1.955]}>
-          <boxGeometry args={[1.4, 0.1, 0.03]} />
-          <meshStandardMaterial ref={brakeMat} color="#ff2a3d" emissive="#ff2a3d" emissiveIntensity={0.8} />
+        <mesh position={[0, 0.34, -1.8]}>
+          <boxGeometry args={[1.3, 0.1, 0.04]} />
+          <meshStandardMaterial ref={brakeMat} color="#ff3b2f" emissive="#ff3b2f" emissiveIntensity={0.6} />
         </mesh>
-        <spotLight ref={spot} position={[0, 0.9, 1.9]} angle={0.5} penumbra={0.6} intensity={12} distance={18} color="#fff1cc" />
-        <object3D ref={spotTarget} position={[0, 0, 8]} />
+        {/* little roof antenna with a cream ball */}
+        <mesh position={[0.55, 1.35, -0.75]} rotation-z={-0.15}>
+          <cylinderGeometry args={[0.02, 0.02, 0.55, 6]} />
+          <meshStandardMaterial color={INK} />
+        </mesh>
+        <mesh position={[0.6, 1.62, -0.75]}>
+          <sphereGeometry args={[0.08, 12, 10]} />
+          <meshStandardMaterial color={PAINT} />
+        </mesh>
       </group>
 
-      {/* wheels: front ones sit in steering pivots */}
-      {wheelPos.map((p, i) => {
-        const wheel = (
+      {/* ---- wheels (positioned from the suspension each frame) ---- */}
+      {WHEELS.map((w, i) => (
+        <group
+          key={i}
+          position={[w.pos[0], w.pos[1] - REST, w.pos[2]]}
+          ref={(el) => {
+            wheelRefs.current[i] = el;
+          }}
+        >
           <group
             ref={(el) => {
-              wheels.current[i] = el;
+              spinRefs.current[i] = el;
             }}
           >
             <mesh rotation-z={Math.PI / 2} castShadow>
-              <cylinderGeometry args={[0.44, 0.44, 0.34, 28]} />
-              <meshStandardMaterial color="#16181e" roughness={0.85} />
+              <cylinderGeometry args={[WHEEL_RADIUS, WHEEL_RADIUS, 0.36, 24]} />
+              <meshStandardMaterial color={INK} roughness={0.9} />
             </mesh>
-            <mesh rotation-z={Math.PI / 2}>
-              <cylinderGeometry args={[0.27, 0.27, 0.36, 10]} />
-              <meshPhysicalMaterial color="#e6e9f0" metalness={1} roughness={0.15} clearcoat={1} />
+            <mesh rotation-z={Math.PI / 2} position={[w.pos[0] < 0 ? -0.05 : 0.05, 0, 0]}>
+              <cylinderGeometry args={[0.24, 0.24, 0.32, 16]} />
+              <meshStandardMaterial color={CREAM} roughness={0.5} />
             </mesh>
-            <mesh rotation-z={Math.PI / 2}>
-              <cylinderGeometry args={[0.08, 0.08, 0.38, 8]} />
-              <meshStandardMaterial color={paint} />
+            <mesh rotation-z={Math.PI / 2} position={[w.pos[0] < 0 ? -0.07 : 0.07, 0, 0]}>
+              <boxGeometry args={[0.08, 0.4, 0.06]} />
+              <meshStandardMaterial color={PAINT} />
             </mesh>
           </group>
-        );
-        return i < 2 ? (
-          <group
-            key={i}
-            position={p}
-            ref={(el) => {
-              frontPivots.current[i] = el;
-            }}
-          >
-            {wheel}
-          </group>
-        ) : (
-          <group key={i} position={p}>
-            {wheel}
-          </group>
-        );
-      })}
-    </group>
+        </group>
+      ))}
     </RigidBody>
   );
+}
+
+function placeCar(chassis: RapierRigidBody, x: number, z: number, yaw: number) {
+  tmpQ.setFromEuler(tmpE.set(0, yaw, 0));
+  chassis.setTranslation({ x, y: 1.4, z }, true);
+  chassis.setRotation({ x: tmpQ.x, y: tmpQ.y, z: tmpQ.z, w: tmpQ.w }, true);
+  chassis.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  chassis.setAngvel({ x: 0, y: 0, z: 0 }, true);
 }

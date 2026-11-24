@@ -1,9 +1,8 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Environment, Html, Lightformer, RoundedBox, Sky, useTexture } from '@react-three/drei';
-import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
+import { Html, RoundedBox, useTexture } from '@react-three/drei';
+import { CuboidCollider, CylinderCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
-import { useTheme } from '@/lib/theme';
 import { projects } from '@/data/portfolio';
 import {
   COINS,
@@ -21,14 +20,30 @@ import {
   STATIONS,
   TREES,
 } from './layout';
+import { nextObjective } from './objectives';
 import { playerPos, puffs } from './runtime';
-import { useGame } from './store';
+import { gameStore, useGame } from './store';
 
-const css = (c: [number, number, number]) => `rgb(${c.join(',')})`;
-const SUN: [number, number, number] = [60, 70, 40];
-const BEACH_RADIUS = ISLAND_RADIUS + 3;
-const WATER_Y = -0.45;
-const FOG = '#cfe3f5';
+/* ---------- toy palette (taken from the site theme) ---------- */
+const C = {
+  bg: '#f1d8c0',
+  board: '#f4e7d4',
+  boardSide: '#c85a3a',
+  boardBottom: '#a8472c',
+  road: '#d4693f',
+  roadLine: '#fbf1e2',
+  plaza: '#ead6bc',
+  sage: '#9db682',
+  sageDark: '#7f9c68',
+  olive: '#b3c08a',
+  trunk: '#8a5a3c',
+  cream: '#fbf3e6',
+  terracotta: '#d9603d',
+  ink: '#241c17',
+  stone: '#d9c4ab',
+};
+const SUN: [number, number, number] = [30, 45, 25];
+const BOARD_DEPTH = 3;
 
 function rng(seed: number) {
   return () => {
@@ -40,123 +55,48 @@ function rng(seed: number) {
   };
 }
 
-/** Speckled grass texture drawn on a canvas (no image download). */
-function useGrassTexture() {
-  return useMemo(() => {
-    const c = document.createElement('canvas');
-    c.width = c.height = 256;
-    const g = c.getContext('2d')!;
-    g.fillStyle = '#5da84f';
-    g.fillRect(0, 0, 256, 256);
-    const r = rng(9);
-    const shades = ['#69b85a', '#4f9a45', '#76c264', '#58a04c', '#82c96b'];
-    for (let i = 0; i < 2600; i++) {
-      g.fillStyle = shades[Math.floor(r() * shades.length)];
-      const s = 1 + r() * 3;
-      g.fillRect(r() * 256, r() * 256, s, s * (1 + r() * 2));
-    }
-    const tex = new THREE.CanvasTexture(c);
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(14, 14);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    return tex;
-  }, []);
-}
-
 /* ------------------------------------------------------------------ */
 /* Labels                                                             */
 /* ------------------------------------------------------------------ */
 function Sign({ position, title, sub }: { position: [number, number, number]; title: string; sub?: string }) {
   return (
     <Html position={position} center distanceFactor={18} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-      <div className="whitespace-nowrap rounded-xl border border-white/40 bg-white/80 px-3 py-1.5 text-center shadow-lg backdrop-blur-md">
-        <p className="font-display text-xl leading-none tracking-wide text-[#0b1630]">{title}</p>
-        {sub && <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#c2502f]">{sub}</p>}
+      <div className="whitespace-nowrap rounded-2xl bg-[#fbf3e6] px-3.5 py-2 text-center shadow-[0_6px_0_rgba(168,71,44,0.35)]">
+        <p className="font-display text-xl font-bold leading-none tracking-tight text-[#241c17]">{title}</p>
+        {sub && <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c85a3a]">{sub}</p>}
       </div>
     </Html>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Ocean                                                              */
+/* The board: a thick cream diorama with terracotta sides             */
 /* ------------------------------------------------------------------ */
-function Ocean() {
-  const mat = useRef<THREE.ShaderMaterial>(null);
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uSun: { value: new THREE.Vector3(...SUN).normalize() },
-      uShore: { value: BEACH_RADIUS - 0.6 },
-      uFog: { value: new THREE.Color(FOG) },
-    }),
+function Board() {
+  const mats = useMemo(
+    () => [
+      new THREE.MeshStandardMaterial({ color: C.boardSide, roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: C.board, roughness: 0.95 }),
+      new THREE.MeshStandardMaterial({ color: C.boardBottom, roughness: 1 }),
+    ],
     []
   );
-  useFrame(({ clock }) => {
-    if (mat.current) mat.current.uniforms.uTime.value = clock.elapsedTime;
-  });
-  return (
-    <mesh rotation-x={-Math.PI / 2} position={[0, WATER_Y, 0]}>
-      <planeGeometry args={[700, 700, 220, 220]} />
-      <shaderMaterial
-        ref={mat}
-        uniforms={uniforms}
-        transparent
-        vertexShader={/* glsl */ `
-          uniform float uTime;
-          varying vec3 vWorld;
-          float wave(vec2 p){
-            return sin(p.x * 0.14 + uTime * 0.9) * 0.22
-                 + sin(p.y * 0.19 + uTime * 1.2) * 0.16
-                 + sin((p.x + p.y) * 0.07 + uTime * 0.6) * 0.28;
-          }
-          void main(){
-            vec3 p = position;
-            vec4 w = modelMatrix * vec4(p, 1.0);
-            // calmer near the shore
-            float calm = smoothstep(34.0, 60.0, length(w.xz));
-            p.z += wave(w.xz) * (0.25 + 0.75 * calm);
-            w = modelMatrix * vec4(p, 1.0);
-            vWorld = w.xyz;
-            gl_Position = projectionMatrix * viewMatrix * w;
-          }`}
-        fragmentShader={/* glsl */ `
-          uniform float uTime; uniform vec3 uSun; uniform float uShore; uniform vec3 uFog;
-          varying vec3 vWorld;
-          void main(){
-            vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
-            if (n.y < 0.0) n = -n;
-            vec3 v = normalize(cameraPosition - vWorld);
-            float d = length(vWorld.xz);
-            // turquoise shallows fading to deep blue
-            vec3 shallow = vec3(0.16, 0.82, 0.86);
-            vec3 deep = vec3(0.03, 0.27, 0.62);
-            vec3 col = mix(shallow, deep, smoothstep(uShore, uShore + 26.0, d));
-            // sky reflection (fresnel) and sun glints
-            float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
-            col = mix(col, vec3(0.72, 0.86, 1.0), fres * 0.6);
-            float spec = pow(max(dot(reflect(-uSun, n), v), 0.0), 120.0);
-            col += vec3(1.0, 0.96, 0.85) * spec * 1.6;
-            // animated foam line around the beach
-            float a = atan(vWorld.z, vWorld.x);
-            float edge = uShore + 0.5 + sin(a * 23.0 + uTime * 1.4) * 0.35 + sin(a * 57.0 - uTime) * 0.2;
-            float foam = smoothstep(edge + 1.4, edge, d) * (0.65 + 0.35 * sin(uTime * 2.0 + a * 9.0));
-            col = mix(col, vec3(0.97, 0.99, 1.0), foam);
-            // distance fog to match the scene
-            float fog = smoothstep(70.0, 260.0, length(cameraPosition - vWorld));
-            col = mix(col, uFog, fog);
-            gl_FragColor = vec4(col, 0.97);
-          }`}
-      />
-    </mesh>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Island, beach and roads                                            */
-/* ------------------------------------------------------------------ */
-function Island({ brand }: { brand: string }) {
-  const grass = useGrassTexture();
+  // soft grass patches scattered on the board
+  const patches = useMemo(() => {
+    const r = rng(5);
+    return Array.from({ length: 26 }, () => {
+      const a = r() * Math.PI * 2;
+      const d = RING_ROAD.outer + 2 + r() * (ISLAND_RADIUS - RING_ROAD.outer - 4);
+      return { x: Math.cos(a) * d, z: Math.sin(a) * d, s: 2 + r() * 3.5 };
+    });
+  }, []);
+  const dashes = useMemo(() => {
+    const r = (RING_ROAD.inner + RING_ROAD.outer) / 2;
+    return Array.from({ length: 36 }, (_, i) => {
+      const a = (i / 36) * Math.PI * 2;
+      return { x: Math.sin(a) * r, z: Math.cos(a) * r, a };
+    });
+  }, []);
   const spokes = useMemo(
     () =>
       STATIONS.filter((s) => !s.id.startsWith('project-') || s.id === 'project-1').map((s) => {
@@ -169,57 +109,48 @@ function Island({ brand }: { brand: string }) {
       }),
     []
   );
-  const dashes = useMemo(() => {
-    const r = (RING_ROAD.inner + RING_ROAD.outer) / 2;
-    return Array.from({ length: 40 }, (_, i) => {
-      const a = (i / 40) * Math.PI * 2;
-      return { x: Math.sin(a) * r, z: Math.cos(a) * r, a };
-    });
-  }, []);
   return (
     <group>
-      {/* sandy beach sloping into the sea */}
-      <mesh position={[0, -1.33, 0]} receiveShadow>
-        <cylinderGeometry args={[BEACH_RADIUS, BEACH_RADIUS + 4, 2.5, 96]} />
-        <meshStandardMaterial color="#ead7a8" roughness={1} />
+      <mesh position={[0, -BOARD_DEPTH / 2, 0]} material={mats} receiveShadow castShadow>
+        <cylinderGeometry args={[ISLAND_RADIUS, ISLAND_RADIUS - 0.4, BOARD_DEPTH, 96]} />
       </mesh>
-      {/* grass plateau */}
-      <mesh position={[0, -0.25, 0]} receiveShadow>
-        <cylinderGeometry args={[ISLAND_RADIUS, ISLAND_RADIUS + 0.4, 0.5, 96]} />
-        <meshStandardMaterial map={grass} roughness={0.95} />
+      {/* cream lip around the edge */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, 0]}>
+        <ringGeometry args={[ISLAND_RADIUS - 0.7, ISLAND_RADIUS, 96]} />
+        <meshStandardMaterial color={C.stone} roughness={0.9} />
       </mesh>
-      {/* ring road with white edge lines and centre dashes */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} receiveShadow>
-        <ringGeometry args={[RING_ROAD.inner, RING_ROAD.outer, 128]} />
-        <meshStandardMaterial color="#3b4049" roughness={0.85} />
-      </mesh>
-      {[RING_ROAD.inner + 0.3, RING_ROAD.outer - 0.3].map((r) => (
-        <mesh key={r} rotation-x={-Math.PI / 2} position={[0, 0.03, 0]}>
-          <ringGeometry args={[r - 0.07, r + 0.07, 128]} />
-          <meshBasicMaterial color="#f1efe8" />
+      {patches.map((p, i) => (
+        <mesh key={i} rotation-x={-Math.PI / 2} position={[p.x, 0.012, p.z]} receiveShadow>
+          <circleGeometry args={[p.s, 28]} />
+          <meshStandardMaterial color={i % 3 === 0 ? C.olive : C.sage} roughness={1} />
         </mesh>
       ))}
+      {/* ring road */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} receiveShadow>
+        <ringGeometry args={[RING_ROAD.inner, RING_ROAD.outer, 128]} />
+        <meshStandardMaterial color={C.road} roughness={0.85} />
+      </mesh>
       {dashes.map((d, i) => (
-        <mesh key={i} position={[d.x, 0.035, d.z]} rotation-y={d.a + Math.PI / 2}>
-          <boxGeometry args={[0.14, 0.01, 1.2]} />
-          <meshBasicMaterial color="#ffd34d" />
+        <mesh key={i} position={[d.x, 0.03, d.z]} rotation-y={d.a + Math.PI / 2}>
+          <boxGeometry args={[0.18, 0.01, 1.3]} />
+          <meshStandardMaterial color={C.roadLine} />
+        </mesh>
+      ))}
+      {spokes.map((p, i) => (
+        <mesh key={i} position={[p.x, 0.021, p.z]} rotation-y={p.angle} receiveShadow>
+          <boxGeometry args={[3.6, 0.02, p.len]} />
+          <meshStandardMaterial color={C.road} roughness={0.85} />
         </mesh>
       ))}
       {/* plaza */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.015, 0]} receiveShadow>
         <circleGeometry args={[RING_ROAD.inner - 0.1, 72]} />
-        <meshStandardMaterial color="#d9d3c7" roughness={0.9} />
+        <meshStandardMaterial color={C.plaza} roughness={0.95} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, 0]}>
-        <ringGeometry args={[RING_ROAD.inner - 0.7, RING_ROAD.inner - 0.4, 96]} />
-        <meshBasicMaterial color={brand} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.025, 0]}>
+        <ringGeometry args={[RING_ROAD.inner - 0.8, RING_ROAD.inner - 0.5, 96]} />
+        <meshStandardMaterial color={C.terracotta} />
       </mesh>
-      {spokes.map((p, i) => (
-        <mesh key={i} position={[p.x, 0.022, p.z]} rotation-y={p.angle} receiveShadow>
-          <boxGeometry args={[3.6, 0.02, p.len]} />
-          <meshStandardMaterial color="#3b4049" roughness={0.85} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -233,18 +164,18 @@ function Ramps() {
         return (
           <group key={i} position={[r.x, 0, r.z]} rotation-y={r.dir}>
             <mesh position={[0, r.height / 2, r.length / 2]} rotation-x={-slope} castShadow receiveShadow>
-              <boxGeometry args={[r.width, 0.16, hyp]} />
-              <meshPhysicalMaterial color="#ffb928" roughness={0.35} clearcoat={0.8} />
+              <boxGeometry args={[r.width, 0.18, hyp]} />
+              <meshStandardMaterial color={C.cream} roughness={0.7} />
             </mesh>
             {[0.2, 0.45, 0.7].map((t) => (
-              <mesh key={t} position={[0, r.height * t + 0.09, r.length * t]} rotation-x={-slope}>
-                <boxGeometry args={[r.width * 0.75, 0.02, 0.3]} />
-                <meshBasicMaterial color="#1b1b1f" />
+              <mesh key={t} position={[0, r.height * t + 0.1, r.length * t]} rotation-x={-slope}>
+                <boxGeometry args={[r.width * 0.75, 0.02, 0.32]} />
+                <meshStandardMaterial color={C.terracotta} />
               </mesh>
             ))}
             <mesh position={[0, r.height / 2, r.length]} castShadow>
-              <boxGeometry args={[r.width, r.height, 0.2]} />
-              <meshStandardMaterial color="#4b515c" />
+              <boxGeometry args={[r.width, r.height, 0.22]} />
+              <meshStandardMaterial color={C.boardSide} />
             </mesh>
           </group>
         );
@@ -254,60 +185,51 @@ function Ramps() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Vegetation                                                         */
+/* Vegetation: lollipop trees, cypresses and bushes                   */
 /* ------------------------------------------------------------------ */
-function Palm({ seed }: { seed: number }) {
+function Tree({ kind, seed }: { kind: number; seed: number }) {
   const r = rng(seed);
-  const lean = 0.25 + r() * 0.25;
-  const segs = 6;
-  const fronds = 8;
-  const top: [number, number, number] = [Math.sin(lean) * 2.2, 4.1, 0];
-  return (
-    <group rotation-y={r() * Math.PI * 2}>
-      {Array.from({ length: segs }, (_, i) => {
-        const t = i / segs;
-        return (
-          <mesh key={i} position={[Math.sin(lean * t) * 2.2 * t, 0.35 + t * 3.9, 0]} rotation-z={-lean * t} castShadow>
-            <cylinderGeometry args={[0.17 - t * 0.05, 0.2 - t * 0.05, 0.72, 8]} />
-            <meshStandardMaterial color={i % 2 ? '#8a6a46' : '#9c7a52'} roughness={1} />
-          </mesh>
-        );
-      })}
-      <group position={top}>
-        {Array.from({ length: fronds }, (_, i) => (
-          <group key={i} rotation-y={(i / fronds) * Math.PI * 2}>
-            <mesh position={[0, -0.25, 1.15]} rotation-x={0.55} castShadow>
-              <boxGeometry args={[0.55, 0.04, 2.5]} />
-              <meshStandardMaterial color={i % 2 ? '#3f9e4c' : '#4bb359'} roughness={0.8} />
-            </mesh>
-          </group>
-        ))}
-        {[0, 1, 2].map((i) => (
-          <mesh key={i} position={[Math.cos(i * 2.1) * 0.25, -0.3, Math.sin(i * 2.1) * 0.25]} castShadow>
-            <sphereGeometry args={[0.16, 10, 8]} />
-            <meshStandardMaterial color="#6b4a2a" />
-          </mesh>
-        ))}
+  if (kind === 0) {
+    const h = 1.4 + r() * 0.8;
+    return (
+      <group>
+        <mesh position={[0, h / 2, 0]} castShadow>
+          <cylinderGeometry args={[0.13, 0.17, h, 8]} />
+          <meshStandardMaterial color={C.trunk} roughness={1} />
+        </mesh>
+        <mesh position={[0, h + 0.9, 0]} castShadow>
+          <sphereGeometry args={[1.15 + r() * 0.3, 20, 16]} />
+          <meshStandardMaterial color={r() > 0.5 ? C.sage : C.sageDark} roughness={0.9} />
+        </mesh>
       </group>
-    </group>
-  );
-}
-
-function Bush({ seed }: { seed: number }) {
-  const r = rng(seed);
-  const greens = ['#4fae55', '#5cbf62', '#45a04d'];
+    );
+  }
+  if (seed % 3 === 0) {
+    return (
+      <group>
+        <mesh position={[0, 0.25, 0]} castShadow>
+          <cylinderGeometry args={[0.12, 0.14, 0.5, 8]} />
+          <meshStandardMaterial color={C.trunk} />
+        </mesh>
+        <mesh position={[0, 1.9, 0]} castShadow scale={[1, 2.4, 1]}>
+          <sphereGeometry args={[0.75, 18, 14]} />
+          <meshStandardMaterial color={C.sageDark} roughness={0.9} />
+        </mesh>
+      </group>
+    );
+  }
   return (
     <group>
       {[0, 1, 2].map((i) => (
-        <mesh key={i} position={[(r() - 0.5) * 1.1, 0.45 + r() * 0.2, (r() - 0.5) * 1.1]} scale={0.6 + r() * 0.35} castShadow>
-          <icosahedronGeometry args={[0.9, 1]} />
-          <meshStandardMaterial color={greens[i]} flatShading roughness={0.9} />
+        <mesh key={i} position={[(r() - 0.5) * 1.2, 0.5 + r() * 0.2, (r() - 0.5) * 1.2]} scale={0.6 + r() * 0.4} castShadow>
+          <sphereGeometry args={[0.85, 16, 12]} />
+          <meshStandardMaterial color={[C.sage, C.olive, C.sageDark][i]} roughness={0.95} />
         </mesh>
       ))}
-      {[0, 1, 2, 3].map((i) => (
-        <mesh key={`f${i}`} position={[(r() - 0.5) * 1.6, 0.95 + r() * 0.3, (r() - 0.5) * 1.6]}>
-          <sphereGeometry args={[0.09, 8, 6]} />
-          <meshStandardMaterial color={['#ff6fa3', '#ffd34d', '#ffffff', '#ff8a4c'][i]} />
+      {[0, 1, 2].map((i) => (
+        <mesh key={`f${i}`} position={[(r() - 0.5) * 1.6, 1.05 + r() * 0.25, (r() - 0.5) * 1.6]}>
+          <sphereGeometry args={[0.1, 8, 6]} />
+          <meshStandardMaterial color={[C.terracotta, C.cream, '#f0b44c'][i]} />
         </mesh>
       ))}
     </group>
@@ -317,7 +239,7 @@ function Bush({ seed }: { seed: number }) {
 function Vegetation() {
   const refs = useRef<(THREE.Group | null)[]>([]);
   const fade = useRef<number[]>(TREES.map(() => 1));
-  // fade out plants standing on the line between the camera and the car
+  // fade out plants standing between the camera and the car
   useFrame(({ camera }, d) => {
     const cx = camera.position.x;
     const cz = camera.position.z;
@@ -330,9 +252,9 @@ function Vegetation() {
       const u = THREE.MathUtils.clamp(((t.x - cx) * sx + (t.z - cz) * sz) / len2, 0, 1.08);
       const px = cx + sx * u - t.x;
       const pz = cz + sz * u - t.z;
-      const blocking = u > 0.02 && camera.position.y < 40 && px * px + pz * pz < 3.4 * 3.4 * t.s;
+      const blocking = u > 0.02 && camera.position.y < 40 && px * px + pz * pz < 3 * 3 * t.s;
       const prev = fade.current[i];
-      const next = THREE.MathUtils.damp(prev, blocking ? 0.18 : 1, 8, d);
+      const next = THREE.MathUtils.damp(prev, blocking ? 0.2 : 1, 8, d);
       fade.current[i] = next;
       if (Math.abs(next - prev) < 0.002 && next > 0.995) return;
       g.traverse((o) => {
@@ -355,17 +277,16 @@ function Vegetation() {
           position={[t.x, 0, t.z]}
           scale={t.s}
         >
-          {t.kind === 0 ? <Palm seed={i + 1} /> : <Bush seed={i + 100} />}
+          <Tree kind={t.kind} seed={i + 1} />
         </group>
       ))}
-      {/* rocks on the beach */}
-      {Array.from({ length: 14 }, (_, i) => {
-        const a = (i / 14) * Math.PI * 2 + 0.3;
-        const d = ISLAND_RADIUS + 1.2 + (i % 3) * 0.5;
+      {Array.from({ length: 16 }, (_, i) => {
+        const a = (i / 16) * Math.PI * 2 + 0.2;
+        const d = ISLAND_RADIUS - 1.6 - (i % 3) * 0.6;
         return (
-          <mesh key={i} position={[Math.cos(a) * d, -0.15, Math.sin(a) * d]} rotation={[i, i * 2, 0]} scale={0.5 + (i % 4) * 0.2} castShadow>
+          <mesh key={i} position={[Math.cos(a) * d, 0.15, Math.sin(a) * d]} rotation={[i, i * 2, 0]} scale={0.45 + (i % 4) * 0.15} castShadow>
             <dodecahedronGeometry args={[0.8, 0]} />
-            <meshStandardMaterial color="#9aa1a8" flatShading roughness={0.9} />
+            <meshStandardMaterial color={C.stone} flatShading roughness={0.9} />
           </mesh>
         );
       })}
@@ -376,48 +297,44 @@ function Vegetation() {
 function Lamp({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      <mesh position={[0, 1.7, 0]} castShadow>
-        <cylinderGeometry args={[0.07, 0.1, 3.4, 10]} />
-        <meshPhysicalMaterial color="#2b3340" metalness={0.7} roughness={0.3} clearcoat={1} />
+      <mesh position={[0, 1.5, 0]} castShadow>
+        <cylinderGeometry args={[0.07, 0.1, 3, 10]} />
+        <meshStandardMaterial color={C.ink} roughness={0.6} />
       </mesh>
-      <mesh position={[0.35, 3.4, 0]} rotation-z={Math.PI / 2}>
-        <cylinderGeometry args={[0.05, 0.05, 0.75, 8]} />
-        <meshPhysicalMaterial color="#2b3340" metalness={0.7} roughness={0.3} />
-      </mesh>
-      <mesh position={[0.68, 3.32, 0]}>
-        <boxGeometry args={[0.36, 0.12, 0.22]} />
-        <meshStandardMaterial color="#fffaf0" emissive="#fff3d6" emissiveIntensity={0.6} />
+      <mesh position={[0, 3.15, 0]}>
+        <sphereGeometry args={[0.3, 16, 12]} />
+        <meshStandardMaterial color="#fff6e5" emissive="#ffdca8" emissiveIntensity={0.8} />
       </mesh>
     </group>
   );
 }
 
 /** Glowing pad the car parks on to open a building. Pulses while the car is on it. */
-function Pad({ at, radius, active, brand }: { at: [number, number]; radius: number; active: boolean; brand: string }) {
+function Pad({ at, radius, active }: { at: [number, number]; radius: number; active: boolean }) {
   const ring = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (ring.current) ring.current.scale.setScalar(active ? 1 + Math.sin(clock.elapsedTime * 6) * 0.06 : 1);
   });
   return (
-    <group position={[at[0], 0.05, at[1]]}>
+    <group position={[at[0], 0.04, at[1]]}>
       <mesh rotation-x={-Math.PI / 2}>
         <circleGeometry args={[radius, 40]} />
-        <meshBasicMaterial color={brand} transparent opacity={active ? 0.45 : 0.22} depthWrite={false} />
+        <meshStandardMaterial color={active ? '#f6c9a8' : C.cream} roughness={0.8} />
       </mesh>
-      <mesh ref={ring} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[radius - 0.18, radius, 48]} />
-        <meshBasicMaterial color="#ffffff" />
+      <mesh ref={ring} rotation-x={-Math.PI / 2} position={[0, 0.005, 0]}>
+        <ringGeometry args={[radius - 0.25, radius, 48]} />
+        <meshStandardMaterial color={C.terracotta} />
       </mesh>
     </group>
   );
 }
 
-function Pads({ brand }: { brand: string }) {
+function Pads() {
   const near = useGame((s) => s.near);
   return (
     <>
       {STATIONS.map((s) => (
-        <Pad key={s.id} at={s.at} radius={s.radius} active={near === s.id} brand={brand} />
+        <Pad key={s.id} at={s.at} radius={s.radius} active={near === s.id} />
       ))}
     </>
   );
@@ -426,106 +343,80 @@ function Pads({ brand }: { brand: string }) {
 /* ------------------------------------------------------------------ */
 /* Buildings                                                          */
 /* ------------------------------------------------------------------ */
-const glass = { color: '#9fd3ff', metalness: 0.3, roughness: 0.05, clearcoat: 1, envMapIntensity: 1.6 } as const;
-
-function House({ brand }: { brand: string }) {
+function House() {
   const [x, z] = PLACES.house;
   return (
     <group position={[x, 0, z]} scale={1.15}>
-      <RoundedBox args={[6, 3.6, 5]} radius={0.15} position={[0, 1.8, 0]} castShadow receiveShadow>
-        <meshStandardMaterial color="#f7f2e8" roughness={0.85} />
+      <RoundedBox args={[6, 3.6, 5]} radius={0.3} smoothness={4} position={[0, 1.8, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color={C.cream} roughness={0.9} />
       </RoundedBox>
-      <mesh position={[0, 4.65, 0]} rotation-y={Math.PI / 4} castShadow>
-        <coneGeometry args={[4.7, 2.3, 4]} />
-        <meshPhysicalMaterial color="#d9674e" roughness={0.5} clearcoat={0.4} flatShading />
+      <mesh position={[0, 4.7, 0]} rotation-y={Math.PI / 4} castShadow>
+        <coneGeometry args={[4.7, 2.4, 4]} />
+        <meshStandardMaterial color={C.terracotta} roughness={0.8} flatShading />
       </mesh>
-      <mesh position={[1.6, 5, -0.6]} castShadow>
-        <boxGeometry args={[0.6, 1.6, 0.6]} />
-        <meshStandardMaterial color="#b8a48c" />
-      </mesh>
-      {/* door + step */}
-      <RoundedBox args={[1.2, 2.2, 0.12]} radius={0.05} position={[0, 1.1, 2.5]}>
-        <meshPhysicalMaterial color={brand} roughness={0.25} clearcoat={1} />
+      <RoundedBox args={[0.7, 1.7, 0.7]} radius={0.1} position={[1.7, 5.1, -0.6]} castShadow>
+        <meshStandardMaterial color={C.boardSide} />
       </RoundedBox>
-      <mesh position={[0, 0.08, 2.9]} receiveShadow>
-        <boxGeometry args={[2, 0.16, 0.8]} />
-        <meshStandardMaterial color="#cfc8bb" />
-      </mesh>
-      {/* windows with frames and flower boxes */}
+      <RoundedBox args={[1.25, 2.2, 0.16]} radius={0.1} position={[0, 1.1, 2.5]}>
+        <meshStandardMaterial color={C.ink} roughness={0.5} />
+      </RoundedBox>
       {[-1.9, 1.9].map((wx) => (
         <group key={wx} position={[wx, 2.05, 2.52]}>
-          <mesh>
-            <boxGeometry args={[1.25, 1.1, 0.06]} />
-            <meshStandardMaterial color="#ffffff" />
+          <RoundedBox args={[1.25, 1.1, 0.1]} radius={0.08}>
+            <meshStandardMaterial color={C.terracotta} />
+          </RoundedBox>
+          <mesh position={[0, 0, 0.06]}>
+            <boxGeometry args={[1.0, 0.85, 0.02]} />
+            <meshStandardMaterial color="#fff2dc" emissive="#ffd9a0" emissiveIntensity={0.35} />
           </mesh>
-          <mesh position={[0, 0, 0.04]}>
-            <boxGeometry args={[1.05, 0.9, 0.02]} />
-            <meshPhysicalMaterial {...glass} />
-          </mesh>
-          <mesh position={[0, -0.7, 0.15]}>
-            <boxGeometry args={[1.2, 0.22, 0.3]} />
-            <meshStandardMaterial color="#8a5a3c" />
-          </mesh>
-          {[-0.4, -0.1, 0.2, 0.45].map((fx, i) => (
-            <mesh key={fx} position={[fx, -0.52, 0.15]}>
-              <sphereGeometry args={[0.1, 8, 6]} />
-              <meshStandardMaterial color={['#ff6fa3', '#ffd34d', '#ff8a4c', '#ffffff'][i]} />
-            </mesh>
-          ))}
         </group>
       ))}
-      <Sign position={[0, 7.1, 0]} title="About Me" sub="who I am" />
+      <Sign position={[0, 7.4, 0]} title="About Me" sub="who I am" />
     </group>
   );
 }
 
-function Tower({ brand }: { brand: string }) {
+function Tower() {
   const [x, z] = PLACES.tower;
   const floors = [
-    { y: 1.5, w: 4.8, label: 'Gloify' },
-    { y: 4.6, w: 4.2, label: 'Ninjacart' },
-    { y: 7.7, w: 3.6, label: 'Neutrinos' },
+    { y: 1.5, w: 4.8, label: 'Gloify', color: C.cream },
+    { y: 4.6, w: 4.2, label: 'Ninjacart', color: C.terracotta },
+    { y: 7.7, w: 3.6, label: 'Neutrinos', color: C.ink },
   ];
   return (
     <group position={[x, 0, z]}>
-      {floors.map((f, i) => (
+      {floors.map((f) => (
         <group key={f.label} position={[0, f.y, 0]}>
-          <RoundedBox args={[f.w, 2.8, f.w]} radius={0.12} castShadow receiveShadow>
-            <meshPhysicalMaterial {...glass} color={i === 2 ? '#7cc0ff' : '#a7d6ff'} />
+          <RoundedBox args={[f.w, 2.8, f.w]} radius={0.3} smoothness={4} castShadow receiveShadow>
+            <meshStandardMaterial color={f.color} roughness={0.85} />
           </RoundedBox>
-          {/* white floor slab */}
-          <mesh position={[0, -1.48, 0]}>
-            <boxGeometry args={[f.w + 0.3, 0.16, f.w + 0.3]} />
-            <meshStandardMaterial color="#f4f6fa" />
-          </mesh>
-          {/* brand light strip facing the road */}
-          <mesh position={[-f.w / 2 - 0.02, 0.9, 0]} rotation-y={-Math.PI / 2}>
-            <planeGeometry args={[f.w * 0.85, 0.12]} />
-            <meshBasicMaterial color={brand} />
-          </mesh>
-          <Html position={[-f.w / 2 - 0.1, 0, 0]} center distanceFactor={16} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-            <span className="whitespace-nowrap rounded-md bg-[#0b1630]/70 px-2 py-0.5 font-display text-lg text-white">{f.label}</span>
+          {[-1, 0, 1].map((k) => (
+            <mesh key={k} position={[-f.w / 2 - 0.01, 0.2, k * (f.w / 3.4)]} rotation-y={-Math.PI / 2}>
+              <planeGeometry args={[f.w / 5, 1.1]} />
+              <meshStandardMaterial color="#fff2dc" emissive="#ffd9a0" emissiveIntensity={0.3} />
+            </mesh>
+          ))}
+          <Html position={[-f.w / 2 - 0.1, -0.9, 0]} center distanceFactor={16} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+            <span className="whitespace-nowrap rounded-md bg-[#241c17] px-2 py-0.5 font-display text-sm font-semibold text-[#fbf3e6]">
+              {f.label}
+            </span>
           </Html>
         </group>
       ))}
-      <mesh position={[0, 9.4, 0]}>
-        <boxGeometry args={[3.9, 0.2, 3.9]} />
-        <meshStandardMaterial color="#f4f6fa" />
-      </mesh>
-      <mesh position={[0, 10.3, 0]}>
+      <mesh position={[0, 10.2, 0]}>
         <cylinderGeometry args={[0.05, 0.05, 1.6, 6]} />
-        <meshStandardMaterial color="#c9ccd6" />
+        <meshStandardMaterial color={C.ink} />
       </mesh>
-      <mesh position={[0, 11.15, 0]}>
-        <sphereGeometry args={[0.16, 12, 8]} />
-        <meshBasicMaterial color="#ff4d4d" />
+      <mesh position={[0, 11.05, 0]}>
+        <sphereGeometry args={[0.2, 12, 8]} />
+        <meshStandardMaterial color={C.terracotta} emissive={C.terracotta} emissiveIntensity={0.6} />
       </mesh>
-      <Sign position={[-1, 12.4, 0]} title="Experience" sub="3 companies · 4+ yrs" />
+      <Sign position={[-1, 12.6, 0]} title="Experience" sub="3 companies · 4+ yrs" />
     </group>
   );
 }
 
-function Billboard({ z, index, brand }: { z: number; index: number; brand: string }) {
+function Billboard({ z, index }: { z: number; index: number }) {
   const p = projects[index];
   const tex = useTexture(p.image, (t) => {
     const loaded = Array.isArray(t) ? t[0] : t;
@@ -535,40 +426,36 @@ function Billboard({ z, index, brand }: { z: number; index: number; brand: strin
   const H = W * (630 / 1200);
   return (
     <group position={[PLACES.boardsX, 0, z]} rotation-y={Math.PI / 2}>
-      {[-1.9, 1.9].map((x) => (
-        <mesh key={x} position={[x, 1.6, -0.1]} castShadow>
-          <cylinderGeometry args={[0.12, 0.14, 3.2, 12]} />
-          <meshPhysicalMaterial color="#e9edf5" metalness={0.6} roughness={0.25} clearcoat={1} />
+      {[-1.9, 1.9].map((px) => (
+        <mesh key={px} position={[px, 1.6, -0.1]} castShadow>
+          <cylinderGeometry args={[0.13, 0.15, 3.2, 12]} />
+          <meshStandardMaterial color={C.boardSide} />
         </mesh>
       ))}
-      <RoundedBox args={[W + 0.4, H + 0.4, 0.22]} radius={0.1} position={[0, 2.9, -0.12]} castShadow>
-        <meshPhysicalMaterial color="#ffffff" roughness={0.3} clearcoat={1} />
+      <RoundedBox args={[W + 0.5, H + 0.5, 0.26]} radius={0.16} position={[0, 2.95, -0.12]} castShadow>
+        <meshStandardMaterial color={C.cream} roughness={0.8} />
       </RoundedBox>
-      <mesh position={[0, 2.9, 0.005]}>
+      <mesh position={[0, 2.95, 0.02]}>
         <planeGeometry args={[W, H]} />
         <meshBasicMaterial map={tex} toneMapped={false} />
       </mesh>
-      <mesh position={[0, 2.9 - H / 2 - 0.22, 0.01]}>
-        <planeGeometry args={[W + 0.4, 0.06]} />
-        <meshBasicMaterial color={brand} />
-      </mesh>
-      <Sign position={[0, 4.9, 0]} title={p.title.split(' – ')[0]} sub={p.company} />
+      <Sign position={[0, 5.1, 0]} title={p.title.split(' – ')[0]} sub={p.company} />
     </group>
   );
 }
 
-function Billboards({ brand }: { brand: string }) {
+function Billboards() {
   return (
     <group>
       {PLACES.boardsZ.map((z, i) => (
-        <Billboard key={i} z={z} index={i} brand={brand} />
+        <Billboard key={i} z={z} index={i} />
       ))}
-      <Sign position={[PLACES.boardsX - 1, 6.4, -3]} title="My Apps" sub="drive up to open" />
+      <Sign position={[PLACES.boardsX - 1, 6.8, -3]} title="My Apps" sub="drive up to open" />
     </group>
   );
 }
 
-function Kiosk({ brand }: { brand: string }) {
+function Kiosk() {
   const [x, z] = PLACES.kiosk;
   const spin = useRef<THREE.Group>(null);
   useFrame((_, d) => {
@@ -577,43 +464,43 @@ function Kiosk({ brand }: { brand: string }) {
   return (
     <group position={[x, 0, z]} scale={1.3}>
       <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.1, 1.25, 1, 24]} />
-        <meshStandardMaterial color="#f4f1ea" />
+        <cylinderGeometry args={[1.1, 1.25, 1, 32]} />
+        <meshStandardMaterial color={C.cream} />
       </mesh>
       <mesh position={[0, 1.02, 0]}>
-        <torusGeometry args={[1.1, 0.05, 8, 40]} />
-        <meshBasicMaterial color={brand} />
+        <torusGeometry args={[1.1, 0.06, 8, 40]} />
+        <meshStandardMaterial color={C.terracotta} />
       </mesh>
       <group ref={spin} position={[0, 1.4, 0]}>
         {[0, 1, 2, 3].map((i) => (
-          <RoundedBox key={i} args={[0.95, 0.2, 0.68]} radius={0.04} position={[0, i * 0.23, 0]} rotation-y={i * 0.4}>
-            <meshPhysicalMaterial color={['#e06c4a', '#4a7bc9', brand, '#8a5bc9'][i]} roughness={0.3} clearcoat={1} />
+          <RoundedBox key={i} args={[0.95, 0.2, 0.68]} radius={0.05} position={[0, i * 0.23, 0]} rotation-y={i * 0.4}>
+            <meshStandardMaterial color={[C.terracotta, C.sage, C.ink, '#f0b44c'][i]} />
           </RoundedBox>
         ))}
       </group>
-      <Sign position={[0, 3.2, 0]} title="Archive" sub="earlier projects" />
+      <Sign position={[0, 3.3, 0]} title="Archive" sub="earlier projects" />
     </group>
   );
 }
 
-function Mailbox({ brand }: { brand: string }) {
+function Mailbox() {
   const [x, z] = PLACES.mailbox;
   const flag = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (flag.current) flag.current.rotation.z = -0.3 + Math.sin(clock.elapsedTime * 2) * 0.25;
   });
   return (
-    <group position={[x, 0, z]} rotation-y={-Math.PI / 4} scale={1.6}>
+    <group position={[x, 0, z]} rotation-y={-Math.PI / 4} scale={1.7}>
       <mesh position={[0, 0.6, 0]} castShadow>
         <cylinderGeometry args={[0.08, 0.08, 1.2, 10]} />
-        <meshStandardMaterial color="#f4f6fa" />
+        <meshStandardMaterial color={C.ink} />
       </mesh>
-      <RoundedBox args={[0.6, 0.55, 1]} radius={0.12} position={[0, 1.38, 0]} castShadow>
-        <meshPhysicalMaterial color={brand} roughness={0.2} metalness={0.3} clearcoat={1} />
+      <RoundedBox args={[0.62, 0.58, 1.02]} radius={0.16} position={[0, 1.38, 0]} castShadow>
+        <meshStandardMaterial color={C.terracotta} roughness={0.6} />
       </RoundedBox>
-      <mesh ref={flag} position={[0.33, 1.5, -0.2]}>
-        <boxGeometry args={[0.04, 0.45, 0.2]} />
-        <meshStandardMaterial color="#ff4d4d" />
+      <mesh ref={flag} position={[0.34, 1.5, -0.2]}>
+        <boxGeometry args={[0.05, 0.45, 0.2]} />
+        <meshStandardMaterial color={C.cream} />
       </mesh>
       <Sign position={[0, 2.5, 0]} title="Contact" sub="say hello" />
     </group>
@@ -621,16 +508,14 @@ function Mailbox({ brand }: { brand: string }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Dynamic bits: cones, dust, coins                                   */
-/* ------------------------------------------------------------------ */
-/* ------------------------------------------------------------------ */
-/* Physics: static world colliders + the knockable playground         */
+/* Physics: static world + knockable playground                       */
 /* ------------------------------------------------------------------ */
 function StaticColliders() {
   return (
     <>
       <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={[48, 0.5, 48]} position={[0, -0.5, 0]} friction={0.9} />
+        {/* the board itself; drive off the edge and you fall (and respawn) */}
+        <CylinderCollider args={[BOARD_DEPTH / 2, ISLAND_RADIUS]} position={[0, -BOARD_DEPTH / 2, 0]} friction={1} />
         {COLLIDERS.map((c, i) => (
           <CylinderCollider key={i} args={[3, c.r]} position={[c.x, 3, c.z]} />
         ))}
@@ -640,7 +525,8 @@ function StaticColliders() {
         const hyp = Math.hypot(r.height, r.length);
         return (
           <RigidBody key={i} type="fixed" colliders={false} position={[r.x, 0, r.z]} rotation={[0, r.dir, 0]}>
-            <CuboidCollider args={[r.width / 2, 0.08, hyp / 2]} position={[0, r.height / 2, r.length / 2]} rotation={[-slope, 0, 0]} />
+            <CuboidCollider args={[r.width / 2, 0.09, hyp / 2]} position={[0, r.height / 2, r.length / 2]} rotation={[-slope, 0, 0]} />
+            <CuboidCollider args={[r.width / 2, r.height / 2, 0.11]} position={[0, r.height / 2, r.length]} />
           </RigidBody>
         );
       })}
@@ -648,19 +534,16 @@ function StaticColliders() {
   );
 }
 
-function crateTexture(label: string, brand: string) {
+function crateTexture(label: string) {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d')!;
-  g.fillStyle = '#f6f3ec';
+  g.fillStyle = C.cream;
   g.fillRect(0, 0, 256, 256);
-  g.fillStyle = brand;
-  g.fillRect(0, 0, 256, 18);
-  g.fillRect(0, 238, 256, 18);
-  g.strokeStyle = 'rgba(0,0,0,0.12)';
-  g.lineWidth = 6;
-  g.strokeRect(10, 10, 236, 236);
-  g.fillStyle = '#0b1630';
+  g.fillStyle = C.terracotta;
+  g.fillRect(0, 0, 256, 22);
+  g.fillRect(0, 234, 256, 22);
+  g.fillStyle = C.ink;
   g.font = `bold ${label.length > 8 ? 38 : 48}px Inter, Arial, sans-serif`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
@@ -671,22 +554,44 @@ function crateTexture(label: string, brand: string) {
   return t;
 }
 
-function SkillCrates({ brand }: { brand: string }) {
-  const mats = useMemo(
-    () => CRATE_LABELS.map((l) => new THREE.MeshPhysicalMaterial({ map: crateTexture(l, brand), roughness: 0.4, clearcoat: 0.6 })),
-    [brand]
-  );
-  const crates: { x: number; y: number; label: number }[] = [];
-  let n = 0;
-  CRATE_TOWER.rows.forEach((count, row) => {
-    for (let i = 0; i < count; i++) {
-      crates.push({ x: CRATE_TOWER.x + (i - (count - 1) / 2) * (CRATE_SIZE + 0.02), y: CRATE_SIZE / 2 + row * CRATE_SIZE, label: n++ });
-    }
+function SkillCrates() {
+  const mats = useMemo(() => CRATE_LABELS.map((l) => new THREE.MeshStandardMaterial({ map: crateTexture(l), roughness: 0.7 })), []);
+  const bodies = useRef<(RapierRigidBody | null)[]>([]);
+  const crates = useMemo(() => {
+    const out: { x: number; y: number; label: number }[] = [];
+    let n = 0;
+    CRATE_TOWER.rows.forEach((count, row) => {
+      for (let i = 0; i < count; i++) {
+        out.push({ x: CRATE_TOWER.x + (i - (count - 1) / 2) * (CRATE_SIZE + 0.02), y: CRATE_SIZE / 2 + row * CRATE_SIZE, label: n++ });
+      }
+    });
+    return out;
+  }, []);
+  // objective: tower counts as knocked down once half the crates have moved
+  useFrame(() => {
+    if (gameStore.get().cratesDown) return;
+    let moved = 0;
+    bodies.current.forEach((b, i) => {
+      if (!b) return;
+      const t = b.translation();
+      if (Math.hypot(t.x - crates[i].x, t.y - crates[i].y, t.z - CRATE_TOWER.z) > 1.2) moved++;
+    });
+    if (moved >= crates.length / 2) gameStore.markCratesDown();
   });
   return (
     <>
       {crates.map((c, i) => (
-        <RigidBody key={i} position={[c.x, c.y + 0.01, CRATE_TOWER.z]} colliders="cuboid" mass={0.6} restitution={0.15} friction={0.8}>
+        <RigidBody
+          key={i}
+          ref={(el) => {
+            bodies.current[i] = el;
+          }}
+          position={[c.x, c.y + 0.01, CRATE_TOWER.z]}
+          colliders="cuboid"
+          mass={0.5}
+          restitution={0.15}
+          friction={0.8}
+        >
           <mesh castShadow receiveShadow material={mats[c.label % mats.length]}>
             <boxGeometry args={[CRATE_SIZE, CRATE_SIZE, CRATE_SIZE]} />
           </mesh>
@@ -713,28 +618,28 @@ function Pin({ x, z }: { x: number; z: number }) {
     return new THREE.LatheGeometry(pts, 20);
   }, []);
   return (
-    <RigidBody position={[x, 0.01, z]} colliders={false} mass={0.25} restitution={0.3} friction={0.6} angularDamping={0.4}>
+    <RigidBody position={[x, 0.01, z]} colliders={false} mass={0.2} restitution={0.3} friction={0.6} angularDamping={0.4}>
       <CylinderCollider args={[0.46, 0.19]} position={[0, 0.48, 0]} />
       <mesh geometry={geo} castShadow>
-        <meshPhysicalMaterial color="#fbfbf8" roughness={0.25} clearcoat={1} />
+        <meshStandardMaterial color={C.cream} roughness={0.4} />
       </mesh>
       {[0.7, 0.76].map((y) => (
         <mesh key={y} position={[0, y, 0]}>
           <cylinderGeometry args={[0.103, 0.103, 0.025, 20]} />
-          <meshStandardMaterial color="#e23b3b" />
+          <meshStandardMaterial color={C.terracotta} />
         </mesh>
       ))}
     </RigidBody>
   );
 }
 
-function Dominoes({ brand }: { brand: string }) {
+function Dominoes() {
   return (
     <>
       {DOMINOES.map((d, i) => (
-        <RigidBody key={i} position={[d.x, 0.61, d.z]} rotation={[0, d.rot, 0]} colliders="cuboid" mass={0.15} friction={0.5}>
+        <RigidBody key={i} position={[d.x, 0.61, d.z]} rotation={[0, d.rot, 0]} colliders="cuboid" mass={0.12} friction={0.5}>
           <RoundedBox args={[0.9, 1.2, 0.22]} radius={0.05} castShadow>
-            <meshPhysicalMaterial color={i % 2 ? brand : '#ffffff'} roughness={0.3} clearcoat={1} />
+            <meshStandardMaterial color={i % 2 ? C.terracotta : C.cream} roughness={0.6} />
           </RoundedBox>
         </RigidBody>
       ))}
@@ -746,19 +651,19 @@ function Cones() {
   return (
     <>
       {CONES.map(([x, z], i) => (
-        <RigidBody key={i} position={[x, 0.01, z]} colliders={false} mass={0.12} restitution={0.25} angularDamping={0.5}>
+        <RigidBody key={i} position={[x, 0.01, z]} colliders={false} mass={0.1} restitution={0.25} angularDamping={0.5}>
           <CylinderCollider args={[0.45, 0.24]} position={[0, 0.45, 0]} />
           <mesh position={[0, 0.05, 0]} castShadow>
             <boxGeometry args={[0.7, 0.1, 0.7]} />
-            <meshStandardMaterial color="#ff6a1a" />
+            <meshStandardMaterial color={C.terracotta} />
           </mesh>
           <mesh position={[0, 0.5, 0]} castShadow>
             <coneGeometry args={[0.28, 0.9, 16]} />
-            <meshPhysicalMaterial color="#ff6a1a" roughness={0.4} clearcoat={0.6} />
+            <meshStandardMaterial color={C.terracotta} roughness={0.5} />
           </mesh>
           <mesh position={[0, 0.5, 0]}>
             <cylinderGeometry args={[0.17, 0.21, 0.16, 16]} />
-            <meshStandardMaterial color="#f4f4f4" />
+            <meshStandardMaterial color={C.cream} />
           </mesh>
         </RigidBody>
       ))}
@@ -766,15 +671,15 @@ function Cones() {
   );
 }
 
-function Playground({ brand }: { brand: string }) {
+function Playground() {
   const resetKey = useGame((s) => s.resetKey);
   return (
     <group key={resetKey}>
-      <SkillCrates brand={brand} />
+      <SkillCrates />
       {PINS.map(([x, z], i) => (
         <Pin key={i} x={x} z={z} />
       ))}
-      <Dominoes brand={brand} />
+      <Dominoes />
       <Cones />
     </group>
   );
@@ -795,7 +700,7 @@ function Dust() {
       m.visible = true;
       m.position.set(p.x, p.y, p.z);
       m.scale.setScalar(p.size * (0.4 + (1 - p.life) * 1.1));
-      (m.material as THREE.MeshBasicMaterial).opacity = Math.max(p.life, 0) * 0.45;
+      (m.material as THREE.MeshBasicMaterial).opacity = Math.max(p.life, 0) * 0.5;
     });
   });
   return (
@@ -808,15 +713,15 @@ function Dust() {
           }}
           visible={false}
         >
-          <icosahedronGeometry args={[0.45, 1]} />
-          <meshBasicMaterial color="#f1ead9" transparent opacity={0} depthWrite={false} />
+          <sphereGeometry args={[0.45, 10, 8]} />
+          <meshBasicMaterial color="#f3dfc6" transparent opacity={0} depthWrite={false} />
         </mesh>
       ))}
     </>
   );
 }
 
-function Coin({ index, brand }: { index: number; brand: string }) {
+function Coin({ index }: { index: number }) {
   const ref = useRef<THREE.Group>(null);
   const collected = useGame((s) => s.collected.includes(index));
   const c = COINS[index];
@@ -829,29 +734,20 @@ function Coin({ index, brand }: { index: number; brand: string }) {
     g.visible = s > 0.02;
     g.rotation.y += d * 2.4;
     g.position.y = baseY + Math.sin(clock.elapsedTime * 2 + index) * 0.15 + (collected ? (1 - s) * 3 : 0);
-    const dist = Math.hypot(playerPos.x - c.at[0], playerPos.z - c.at[1]);
-    if (!collected && dist < 3.5 && Math.abs(playerPos.y + 1 - baseY) < 2) {
-      g.position.x = THREE.MathUtils.damp(g.position.x, c.at[0] + (playerPos.x - c.at[0]) * 0.5, 6, d);
-      g.position.z = THREE.MathUtils.damp(g.position.z, c.at[1] + (playerPos.z - c.at[1]) * 0.5, 6, d);
-    }
   });
   return (
     <group ref={ref} position={[c.at[0], baseY, c.at[1]]}>
       <mesh rotation-x={Math.PI / 2} castShadow>
-        <cylinderGeometry args={[0.55, 0.55, 0.12, 32]} />
-        <meshPhysicalMaterial color="#ffcf4a" emissive="#ffb703" emissiveIntensity={0.25} metalness={0.9} roughness={0.15} clearcoat={1} />
+        <cylinderGeometry args={[0.55, 0.55, 0.14, 32]} />
+        <meshStandardMaterial color="#f2b543" emissive="#e08a1e" emissiveIntensity={0.25} metalness={0.4} roughness={0.35} />
       </mesh>
       <mesh rotation-x={Math.PI / 2}>
-        <torusGeometry args={[0.4, 0.045, 8, 32]} />
-        <meshBasicMaterial color={brand} />
-      </mesh>
-      <mesh position={[0, -baseY / 2 + 2, 0]}>
-        <cylinderGeometry args={[0.07, 0.07, 4 + baseY, 6]} />
-        <meshBasicMaterial color="#ffe08a" transparent opacity={0.35} depthWrite={false} />
+        <torusGeometry args={[0.4, 0.05, 8, 32]} />
+        <meshStandardMaterial color={C.cream} />
       </mesh>
       {!collected && (
         <Html position={[0, 1, 0]} center distanceFactor={16} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-          <span className="whitespace-nowrap rounded-full bg-[#0b1630]/75 px-2 py-0.5 font-mono text-[11px] text-[#ffd166]">
+          <span className="whitespace-nowrap rounded-full bg-[#241c17]/80 px-2 py-0.5 font-mono text-[11px] text-[#f6c86a]">
             {c.label}
             {c.y ? ' ↑ jump' : ''}
           </span>
@@ -861,57 +757,81 @@ function Coin({ index, brand }: { index: number; brand: string }) {
   );
 }
 
+/** Floating arrow above the car pointing at the next tour goal. */
+function GuideArrow() {
+  const g = useRef<THREE.Group>(null);
+  useFrame(({ clock }, d) => {
+    const arrow = g.current;
+    if (!arrow) return;
+    const s = gameStore.get();
+    const obj = nextObjective(s);
+    const target = obj?.target(s, playerPos.x, playerPos.z);
+    const far = target ? Math.hypot(target[0] - playerPos.x, target[1] - playerPos.z) > 4 : false;
+    const visible = !!target && far && !s.open;
+    arrow.scale.setScalar(THREE.MathUtils.damp(arrow.scale.x, visible ? 1 : 0, 8, d));
+    arrow.position.set(playerPos.x, playerPos.y + 3.3 + Math.sin(clock.elapsedTime * 3) * 0.15, playerPos.z);
+    if (target) {
+      const yaw = Math.atan2(target[0] - playerPos.x, target[1] - playerPos.z);
+      arrow.rotation.y = arrow.rotation.y + Math.atan2(Math.sin(yaw - arrow.rotation.y), Math.cos(yaw - arrow.rotation.y)) * (1 - Math.exp(-8 * d));
+    }
+  });
+  return (
+    <group ref={g} scale={0}>
+      <mesh rotation-x={Math.PI / 2} position={[0, 0, 0.35]}>
+        <coneGeometry args={[0.42, 0.9, 3]} />
+        <meshStandardMaterial color={C.terracotta} emissive={C.terracotta} emissiveIntensity={0.35} />
+      </mesh>
+      <mesh rotation-x={Math.PI / 2} position={[0, 0, -0.3]}>
+        <boxGeometry args={[0.24, 0.6, 0.12]} />
+        <meshStandardMaterial color={C.terracotta} emissive={C.terracotta} emissiveIntensity={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 export function World() {
-  const theme = useTheme();
-  const brand = css(theme.brand);
   return (
     <>
-      <color attach="background" args={[FOG]} />
-      <fog attach="fog" args={[FOG, 80, 240]} />
-      <Sky sunPosition={SUN} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.86} />
-      {/* studio-style reflections for glossy paint and glass (rendered once) */}
-      <Environment resolution={256} frames={1}>
-        <Lightformer form="rect" intensity={1.6} color="#cfe6ff" position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={[40, 40, 1]} />
-        <Lightformer form="circle" intensity={6} color="#fff4dc" position={SUN.map((v) => v / 6) as [number, number, number]} scale={4} />
-        <Lightformer form="rect" intensity={0.6} color="#7fb36a" position={[0, -6, 0]} rotation-x={-Math.PI / 2} scale={[40, 40, 1]} />
-        <Lightformer form="rect" intensity={1.2} color="#8fd0ff" position={[-14, 2, 0]} rotation-y={Math.PI / 2} scale={[30, 6, 1]} />
-      </Environment>
-      <hemisphereLight args={['#d6ecff', '#7a9a62', 0.85]} />
+      <color attach="background" args={[C.bg]} />
+      <fog attach="fog" args={[C.bg, 70, 170]} />
+      <hemisphereLight args={['#fff3e3', '#c9734f', 0.9]} />
+      <ambientLight intensity={0.25} />
       <directionalLight
         position={SUN}
-        intensity={2.4}
-        color="#fff1d8"
+        intensity={2.1}
+        color="#fff1dc"
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
-        shadow-camera-far={200}
+        shadow-camera-left={-38}
+        shadow-camera-right={38}
+        shadow-camera-top={38}
+        shadow-camera-bottom={-38}
+        shadow-camera-far={150}
         shadow-bias={-0.0004}
-        shadow-normalBias={0.03}
+        shadow-normalBias={0.04}
+        shadow-radius={6}
       />
-      <Ocean />
-      <Island brand={brand} />
+      <Board />
       <Ramps />
       <Vegetation />
-      <Pads brand={brand} />
-      <House brand={brand} />
-      <Tower brand={brand} />
-      <Billboards brand={brand} />
-      <Kiosk brand={brand} />
-      <Mailbox brand={brand} />
+      <Pads />
+      <House />
+      <Tower />
+      <Billboards />
+      <Kiosk />
+      <Mailbox />
       {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
         const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
         const r = RING_ROAD.outer + 1.3;
         return <Lamp key={i} position={[Math.sin(a) * r, 0, Math.cos(a) * r]} />;
       })}
       <StaticColliders />
-      <Playground brand={brand} />
+      <Playground />
       <Dust />
+      <GuideArrow />
       {COINS.map((_, i) => (
-        <Coin key={i} index={i} brand={brand} />
+        <Coin key={i} index={i} />
       ))}
     </>
   );

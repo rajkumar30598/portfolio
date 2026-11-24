@@ -39,3 +39,54 @@ export const sfx = {
   crash: () => tone([90, 60], 0.08, 'sawtooth', 0.05),
   land: () => tone([110], 0.09, 'sine', 0.08),
 };
+
+/* ---------- engine hum: two detuned oscillators through a low-pass filter ---------- */
+let engine: { a: OscillatorNode; b: OscillatorNode; gain: GainNode; filter: BiquadFilterNode } | null = null;
+
+export function startEngine() {
+  if (engine) return;
+  try {
+    ctx ??= new AudioContext();
+    if (ctx.state === 'suspended') void ctx.resume();
+    const a = ctx.createOscillator();
+    const b = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    a.type = 'sawtooth';
+    b.type = 'square';
+    filter.type = 'lowpass';
+    filter.frequency.value = 420;
+    gain.gain.value = 0;
+    a.connect(filter);
+    b.connect(filter);
+    filter.connect(gain).connect(ctx.destination);
+    a.start();
+    b.start();
+    engine = { a, b, gain, filter };
+  } catch {
+    /* audio unavailable */
+  }
+}
+
+/** speed01: 0..1 of top speed; throttle: is the player accelerating */
+export function setEngine(speed01: number, throttle: boolean) {
+  if (!engine || !ctx) return;
+  const t = ctx.currentTime;
+  const f = 48 + speed01 * 110 + (throttle ? 12 : 0);
+  engine.a.frequency.setTargetAtTime(f, t, 0.08);
+  engine.b.frequency.setTargetAtTime(f * 0.501, t, 0.08);
+  engine.filter.frequency.setTargetAtTime(300 + speed01 * 900, t, 0.1);
+  engine.gain.gain.setTargetAtTime(muted ? 0 : 0.018 + speed01 * 0.03 + (throttle ? 0.012 : 0), t, 0.1);
+}
+
+export function stopEngine() {
+  if (!engine) return;
+  try {
+    engine.a.stop();
+    engine.b.stop();
+    engine.gain.disconnect();
+  } catch {
+    /* already stopped */
+  }
+  engine = null;
+}

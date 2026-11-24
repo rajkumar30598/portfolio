@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
-import { ArrowUpRight, Camera, Coins, Github, Linkedin, Mail, Phone, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowUpRight, Camera, Check, Coins, Mail as MailIcon, Trophy, Github, Linkedin, Mail, Phone, Volume2, VolumeX, X } from 'lucide-react';
 import { EMAIL, GITHUB, LINKEDIN, PHONE, experiences, projects } from '@/data/portfolio';
 import { bindKeyboard, cycleCamera, input, onCameraChange, setStick } from './input';
 import { Minimap } from './Minimap';
@@ -11,7 +11,8 @@ import { Car } from './Car';
 import { CAMERA_MODES, hud, view } from './runtime';
 import { World } from './World';
 import { gameStore, useGame } from './store';
-import { isMuted, setMuted, sfx } from './sound';
+import { isMuted, setMuted, sfx, startEngine, stopEngine } from './sound';
+import { OBJECTIVES, nextObjective } from './objectives';
 
 const isTouch = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
@@ -230,7 +231,7 @@ function Prompt() {
       onClick={() => {
         input.interact = true;
       }}
-      className="absolute bottom-32 left-1/2 z-30 flex -translate-x-1/2 animate-bounce items-center gap-3 rounded-full border border-brand/40 bg-black/60 px-5 py-3 text-white backdrop-blur-md sm:bottom-16"
+      className="absolute bottom-32 left-1/2 z-30 flex -translate-x-1/2 animate-bounce items-center gap-3 rounded-full bg-[#241c17] px-5 py-3 font-semibold text-[#fbf3e6] shadow-[0_6px_0_rgba(0,0,0,0.25)] sm:bottom-16"
     >
       <kbd className="hidden h-7 w-7 items-center justify-center rounded-md bg-brand font-mono text-sm font-semibold text-white sm:flex">E</kbd>
       {st.prompt}
@@ -259,7 +260,7 @@ function CoinToast() {
   }
   if (!visible) return null;
   return (
-    <div className="pointer-events-none absolute left-1/2 top-24 z-30 -translate-x-1/2 animate-[panel-in_0.3s_ease] rounded-full bg-black/60 px-4 py-2 font-mono text-sm text-[#ffd166] backdrop-blur-md">
+    <div className="pointer-events-none absolute left-1/2 top-24 z-30 -translate-x-1/2 animate-[panel-in_0.3s_ease] rounded-full bg-[#241c17]/85 px-4 py-2 font-mono text-sm text-[#f6c86a]">
       + {visible}
     </div>
   );
@@ -315,7 +316,7 @@ function Intro({ onStart }: { onStart: () => void }) {
         <p className="mb-2 text-xs uppercase tracking-[0.3em] text-brand">Play mode</p>
         <h2 className="mb-3 font-display text-6xl leading-none text-white">Rajkumar's Island</h2>
         <p className="mb-6 text-white/65">
-          Drive around the island to discover my work. Park on a glowing pad to open a building, hit the ramps, knock over cones and collect all {COINS.length} skill coins.
+          Drive a little car around my miniature world. Follow the arrow to finish the island tour: open my apps and experience, collect {COINS.length} skill coins, smash the crate tower and land a jump.
         </p>
         <div className="mb-7 grid grid-cols-2 gap-3 text-left text-sm">
           {(touch
@@ -358,8 +359,120 @@ function Intro({ onStart }: { onStart: () => void }) {
 function Loading() {
   return (
     <Html center>
-      <p className="animate-pulse whitespace-nowrap font-mono text-sm text-white/60">Building the island…</p>
+      <p className="animate-pulse whitespace-nowrap font-mono text-sm text-[#241c17]/60">Building the island…</p>
     </Html>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tour checklist, toasts and the finish card                         */
+/* ------------------------------------------------------------------ */
+const hudCard = 'rounded-2xl bg-[#fbf3e6]/95 text-[#241c17] shadow-[0_6px_0_rgba(168,71,44,0.3)] backdrop-blur';
+
+function TourPanel() {
+  const state = useGame((s) => s);
+  const done = OBJECTIVES.filter((o) => o.done(state)).length;
+  const next = nextObjective(state);
+  const [open, setOpen] = useState(true);
+  return (
+    <div className={`${hudCard} pointer-events-auto w-[min(78vw,290px)] px-4 py-3`}>
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between gap-3 text-left">
+        <span>
+          <span className="block font-display text-xl font-bold leading-none">Island tour</span>
+          <span className="mt-1 block text-xs font-semibold text-[#c85a3a]">
+            {done}/{OBJECTIVES.length} done{next ? ` · next: ${next.label.toLowerCase()}` : ' · all done!'}
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-[#241c17]/50">{open ? 'Hide' : 'Show'}</span>
+      </button>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#241c17]/10">
+        <div className="h-full rounded-full bg-[#d9603d] transition-[width] duration-700" style={{ width: `${(done / OBJECTIVES.length) * 100}%` }} />
+      </div>
+      {open && (
+        <ul className="mt-3 space-y-1.5">
+          {OBJECTIVES.map((o) => {
+            const ok = o.done(state);
+            const isNext = next?.id === o.id;
+            return (
+              <li key={o.id} className={`flex items-center gap-2.5 text-sm ${ok ? 'text-[#241c17]/45 line-through' : isNext ? 'font-semibold' : ''}`}>
+                <span
+                  className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                    ok ? 'border-[#d9603d] bg-[#d9603d] text-white' : isNext ? 'border-[#d9603d]' : 'border-[#241c17]/25'
+                  }`}
+                >
+                  {ok && <Check size={12} strokeWidth={3.5} />}
+                </span>
+                <span className="flex-1">{o.label}</span>
+                {o.progress && !ok && <span className="text-xs font-semibold text-[#c85a3a]">{o.progress(state)}</span>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Toast() {
+  const toast = useGame((s) => s.toast);
+  const [visible, setVisible] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- transient message per event
+    setVisible(toast.text);
+    const id = setTimeout(() => setVisible(null), 1800);
+    return () => clearTimeout(id);
+  }, [toast]);
+  if (!visible) return null;
+  return (
+    <div className={`${hudCard} pointer-events-none absolute left-1/2 top-28 z-30 -translate-x-1/2 animate-[panel-in_0.35s_cubic-bezier(.2,.9,.3,1.3)] px-5 py-2.5 font-display text-lg font-bold`}>
+      {visible}
+    </div>
+  );
+}
+
+function TourComplete() {
+  const done = useGame((s) => s.tourDone);
+  const [dismissed, setDismissed] = useState(false);
+  if (!done || dismissed) return null;
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#241c17]/40 p-6 backdrop-blur-[2px]">
+      {/* simple confetti */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {Array.from({ length: 40 }, (_, i) => (
+          <span
+            key={i}
+            className="absolute top-[-5%] h-3 w-2 animate-[confetti_2.8s_linear_infinite] rounded-sm"
+            style={{
+              left: `${(i * 37) % 100}%`,
+              background: ['#d9603d', '#fbf3e6', '#f2b543', '#9db682'][i % 4],
+              animationDelay: `${(i % 10) * 0.25}s`,
+            }}
+          />
+        ))}
+      </div>
+      <div className={`${hudCard} relative w-full max-w-md animate-[panel-in_0.5s_cubic-bezier(.2,.9,.3,1.3)] p-8 text-center`}>
+        <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d9603d] text-white">
+          <Trophy size={26} />
+        </span>
+        <h2 className="font-display text-4xl font-bold leading-none">Tour complete!</h2>
+        <p className="mt-3 text-[#241c17]/70">
+          You've seen my work, my experience and every skill on the island. Thanks for playing. Want to build something
+          together?
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <a
+            href={`mailto:${EMAIL}?subject=${encodeURIComponent('Hello from your island')}`}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#d9603d] px-5 py-3.5 font-semibold text-white"
+          >
+            <MailIcon size={18} /> Get in touch
+          </a>
+          <button onClick={() => setDismissed(true)} className="flex-1 rounded-2xl border-2 border-[#241c17]/15 px-5 py-3.5 font-semibold">
+            Keep driving
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -392,11 +505,13 @@ export default function Game({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     input.frozen = !started;
+    if (started) startEngine();
   }, [started]);
+  useEffect(() => () => stopEngine(), []);
 
   return (
-    <div className="fixed inset-0 z-[150] bg-[#cfe3f5] text-white" role="application" aria-label="Portfolio game">
-      <Canvas shadows="soft" camera={{ position: [0, 30, 40], fov: 45, far: 1200 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
+    <div className="fixed inset-0 z-[150] bg-[#f1d8c0] text-white" role="application" aria-label="Portfolio game">
+      <Canvas shadows="soft" camera={{ position: [0, 75, 95], fov: 50, far: 600 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
         <Suspense fallback={<Loading />}>
           <Physics gravity={[0, -25, 0]}>
             <World />
@@ -407,16 +522,16 @@ export default function Game({ onExit }: { onExit: () => void }) {
 
       {/* top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between p-4 sm:p-6">
-        <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/45 px-4 py-2 backdrop-blur-md">
-          <p className="font-display text-2xl leading-none">Rajkumar's Island</p>
-          <p className="mt-1 flex items-center gap-1.5 font-mono text-xs text-[#ffd166]">
-            <Coins size={14} /> {collected} / {COINS.length} skills
+        <div className="flex flex-col gap-2">
+          {started ? <TourPanel /> : <span />}
+          <p className={`${hudCard} pointer-events-auto flex w-fit items-center gap-1.5 px-3 py-1.5 text-xs font-semibold`}>
+            <Coins size={14} className="text-[#d9603d]" /> {collected} / {COINS.length} skill coins
           </p>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button
             onClick={cycleCamera}
-            className="flex h-11 items-center gap-2 rounded-full border border-white/15 bg-black/45 px-4 text-sm backdrop-blur-md hover:bg-white/10"
+            className="flex h-11 items-center gap-2 rounded-full bg-[#fbf3e6]/95 px-4 text-sm font-semibold text-[#241c17] shadow-[0_4px_0_rgba(168,71,44,0.3)] transition-transform hover:-translate-y-0.5"
             title="Change camera (C)"
           >
             <Camera size={16} /> {CAMERA_MODES[camMode]}
@@ -425,7 +540,7 @@ export default function Game({ onExit }: { onExit: () => void }) {
             onClick={() => {
               input.reset = true;
             }}
-            className="flex h-11 items-center rounded-full border border-white/15 bg-black/45 px-4 text-sm backdrop-blur-md hover:bg-white/10"
+            className="flex h-11 items-center rounded-full bg-[#fbf3e6]/95 px-4 text-sm font-semibold text-[#241c17] shadow-[0_4px_0_rgba(168,71,44,0.3)] transition-transform hover:-translate-y-0.5"
           >
             Reset car
           </button>
@@ -435,13 +550,13 @@ export default function Game({ onExit }: { onExit: () => void }) {
               setMutedState(!muted);
             }}
             aria-label={muted ? 'Unmute' : 'Mute'}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 backdrop-blur-md hover:bg-white/10"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fbf3e6]/95 text-[#241c17] shadow-[0_4px_0_rgba(168,71,44,0.3)] transition-transform hover:-translate-y-0.5"
           >
             {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
           <button
             onClick={onExit}
-            className="flex h-11 items-center gap-2 rounded-full border border-white/15 bg-black/45 px-4 text-sm backdrop-blur-md hover:bg-white/10"
+            className="flex h-11 items-center gap-2 rounded-full bg-[#fbf3e6]/95 px-4 text-sm font-semibold text-[#241c17] shadow-[0_4px_0_rgba(168,71,44,0.3)] transition-transform hover:-translate-y-0.5"
           >
             <X size={16} /> Exit game
           </button>
@@ -453,21 +568,23 @@ export default function Game({ onExit }: { onExit: () => void }) {
         <>
           <Prompt />
           <CoinToast />
+          <Toast />
+          <TourComplete />
           {touch && <Joystick />}
           {!touch && <Minimap />}
-          <div className="pointer-events-none absolute bottom-6 right-6 z-30 rounded-2xl border border-white/10 bg-black/45 px-5 py-3 text-right backdrop-blur-md">
+          <div className={`${hudCard} pointer-events-none absolute bottom-6 right-6 z-30 px-5 py-3 text-right`}>
             <p
               ref={(el) => {
                 hud.speed = el;
               }}
-              className="font-display text-5xl leading-none text-brand tabular-nums"
+              className="font-display text-5xl font-bold leading-none text-[#d9603d] tabular-nums"
             >
               0
             </p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">km/h</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#241c17]/50">km/h</p>
           </div>
           {!touch && (
-            <p className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2 font-mono text-xs text-white/40">
+            <p className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#241c17]/55 px-3 py-1 font-mono text-xs text-[#fbf3e6]/85">
               WASD drive · Shift boost · Space drift · E open · C camera · R reset
             </p>
           )}

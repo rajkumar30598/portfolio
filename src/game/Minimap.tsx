@@ -29,30 +29,30 @@ export function Minimap() {
     const draw = () => {
       g.clearRect(0, 0, SIZE, SIZE);
       // sea + beach + grass
-      g.fillStyle = '#1aa7c9';
+      g.fillStyle = '#f1d8c0';
       g.beginPath();
       g.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#ead7a8';
+      g.fillStyle = '#c85a3a';
       g.beginPath();
-      g.arc(SIZE / 2, SIZE / 2, (ISLAND_RADIUS + 3) * k, 0, Math.PI * 2);
+      g.arc(SIZE / 2, SIZE / 2, (ISLAND_RADIUS + 0.6) * k, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#5da84f';
+      g.fillStyle = '#f4e7d4';
       g.beginPath();
       g.arc(SIZE / 2, SIZE / 2, ISLAND_RADIUS * k, 0, Math.PI * 2);
       g.fill();
       // ring road + plaza
-      g.strokeStyle = '#3b4049';
+      g.strokeStyle = '#d4693f';
       g.lineWidth = (RING_ROAD.outer - RING_ROAD.inner) * k;
       g.beginPath();
       g.arc(SIZE / 2, SIZE / 2, ((RING_ROAD.inner + RING_ROAD.outer) / 2) * k, 0, Math.PI * 2);
       g.stroke();
-      g.fillStyle = '#d9d3c7';
+      g.fillStyle = '#ead6bc';
       g.beginPath();
       g.arc(SIZE / 2, SIZE / 2, RING_ROAD.inner * k, 0, Math.PI * 2);
       g.fill();
       // buildings
-      g.fillStyle = '#ffffff';
+      g.fillStyle = '#241c17';
       for (const [x, z] of [PLACES.house, PLACES.tower, PLACES.kiosk, PLACES.mailbox]) {
         const [mx, my] = toMap(x, z);
         g.fillRect(mx - 3.5, my - 3.5, 7, 7);
@@ -72,7 +72,7 @@ export function Minimap() {
         g.fill();
         const label = LABELS[s.id];
         if (label) {
-          g.fillStyle = 'rgba(6,10,22,0.85)';
+          g.fillStyle = 'rgba(36,28,23,0.9)';
           g.fillText(label, mx, my - 6);
         }
       }
@@ -95,7 +95,7 @@ export function Minimap() {
       g.save();
       g.translate(px, py);
       g.rotate(-yaw + Math.PI);
-      g.fillStyle = '#ffffff';
+      g.fillStyle = '#fbf3e6';
       g.strokeStyle = '#b8472a';
       g.lineWidth = 2;
       g.beginPath();
@@ -113,9 +113,9 @@ export function Minimap() {
     return () => cancelAnimationFrame(raf);
   }, []);
   return (
-    <div className="pointer-events-none absolute bottom-6 left-6 z-30 hidden rounded-full border-2 border-white/70 bg-white/20 p-1 shadow-xl backdrop-blur-md sm:block">
+    <div className="pointer-events-none absolute bottom-6 left-6 z-30 hidden rounded-full bg-[#fbf3e6] p-1.5 shadow-[0_6px_0_rgba(168,71,44,0.3)] sm:block">
       <canvas ref={canvas} style={{ width: SIZE, height: SIZE }} className="rounded-full" aria-label="Island map" />
-      <span className="absolute left-1/2 top-1 -translate-x-1/2 font-mono text-[9px] font-bold text-white drop-shadow">N</span>
+      <span className="absolute left-1/2 top-1 -translate-x-1/2 font-mono text-[9px] font-bold text-[#241c17]">N</span>
     </div>
   );
 }
