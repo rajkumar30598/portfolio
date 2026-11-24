@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowDownRight, Github, Linkedin, Mail } from 'lucide-react';
+import { ArrowDownRight, Gamepad2, Github, Linkedin, Mail } from 'lucide-react';
+import { startGame } from '@/lib/game';
 import { Magnetic } from '@/components/motion';
 import { prefersReducedMotion, scrollToId } from '@/lib/motion';
 
@@ -134,6 +135,15 @@ export function Hero({ ready }: { ready: boolean }) {
                   className="rounded-full border border-white/20 bg-white/[0.03] px-8 py-4 text-white backdrop-blur-md transition-colors duration-300 hover:border-brand hover:text-brand"
                 >
                   Let's connect
+                </button>
+              </Magnetic>
+              <Magnetic>
+                <button
+                  onClick={startGame}
+                  className="group flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-6 py-4 text-brand backdrop-blur-md transition-colors duration-300 hover:bg-brand hover:text-ink"
+                >
+                  <Gamepad2 size={18} className="transition-transform duration-300 group-hover:rotate-[-12deg]" />
+                  Play as a game
                 </button>
               </Magnetic>
             </div>

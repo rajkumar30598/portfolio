@@ -4,57 +4,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Calendar, MapPin, Briefcase, GraduationCap, Trophy } from 'lucide-react';
 import { RevealText, SectionLabel, TiltCard } from '@/components/motion';
 import { prefersReducedMotion } from '@/lib/motion';
+import { experiences } from '@/data/portfolio';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const experiences = [
-  {
-    id: 1,
-    role: 'SDE 2',
-    company: 'Neutrinos',
-    location: 'Bangalore, India',
-    period: 'Mar 2026 - Present',
-    description:
-      'Building a platform-level UI component library and design system used across multiple products.',
-    achievements: [
-      'Architected a reusable UI component library adopted across multiple products',
-      'Built a theme-aware, accessible component system with well-documented APIs',
-      'Reduced bundle size and improved render performance with lazy-loading, tree-shaking and OnPush',
-      'Set up component docs, usage guidelines and semantic versioning to speed up onboarding',
-    ],
-  },
-  {
-    id: 2,
-    role: 'SDE 2',
-    company: 'Ninjacart',
-    location: 'Bangalore, India',
-    period: 'Jul 2022 - Mar 2026',
-    description:
-      'Led frontend development for real-time order management systems and internal tools.',
-    achievements: [
-      'Built a real-time order management system in Angular and WebSockets for high-volume trade',
-      'Improved order processing speed by 25% by optimizing real-time data sync',
-      'Built a Jira-inspired task board with drag-and-drop and live status syncing',
-      'Integrated in-platform chat using matrix-js-sdk',
-      'Delivered KYC and payment modules using Digio and Ninja-Pay',
-    ],
-  },
-  {
-    id: 3,
-    role: 'Angular Developer',
-    company: 'Gloify',
-    location: 'Bangalore, India',
-    period: 'Feb 2022 - Jul 2022',
-    description:
-      'Built interactive dashboards and reusable component libraries for fintech applications.',
-    achievements: [
-      'Built live stock-analytics dashboards with Angular, WebSocket and Highcharts',
-      'Developed reusable UI components improving delivery speed',
-      'Translated UI/UX designs into pixel-accurate, responsive interfaces',
-      'Collaborated with QA and backend teams for smooth releases',
-    ],
-  },
-];
 
 export function Experience() {
   const sectionRef = useRef<HTMLElement>(null);

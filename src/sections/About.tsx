@@ -3,11 +3,9 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CountUp, Marquee, RevealText, SectionLabel, TiltCard } from '@/components/motion';
 import { prefersReducedMotion } from '@/lib/motion';
+import { stackRowA, stackRowB } from '@/data/portfolio';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const stackRowA = ['JavaScript', 'TypeScript', 'Angular', 'React', 'React Native', 'Next.js', 'RxJS', 'Redux'];
-const stackRowB = ['Tailwind', 'HTML / SCSS', 'WebSocket', 'REST APIs', 'Firebase', 'Expo', 'Zustand', 'Git'];
 
 const stats = [
   { value: '4+', label: 'Years experience' },
