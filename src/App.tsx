@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { gsap } from 'gsap';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Toaster } from '@/components/ui/sonner';
+import { Cursor, Preloader, ScrollProgress } from '@/components/motion';
+import { initSmoothScroll } from '@/lib/motion';
 import { Navigation } from './sections/Navigation';
 import { Hero } from './sections/Hero';
 import { About } from './sections/About';
@@ -11,43 +12,51 @@ import { Contact } from './sections/Contact';
 import { Footer } from './sections/Footer';
 import './App.css';
 
-// Register GSAP plugins
-gsap.registerPlugin(ScrollTrigger);
+// three.js is heavy: load the scene in its own chunk so text paints first
+const BackgroundScene = lazy(() => import('./three/BackgroundScene'));
 
 function App() {
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
-    // Configure ScrollTrigger defaults
-    ScrollTrigger.defaults({
-      toggleActions: 'play none none none',
-    });
-
-    // Refresh ScrollTrigger on load
-    ScrollTrigger.refresh();
-
-    // Cleanup on unmount
+    const cleanup = initSmoothScroll();
+    // images and fonts change section heights, which pinned triggers depend on
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener('load', refresh);
+    document.fonts?.ready.then(refresh);
     return () => {
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      window.removeEventListener('load', refresh);
+      cleanup();
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#161616] text-white overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-clip bg-[#0b0b0d] text-white">
+      <Suspense fallback={null}>
+        <BackgroundScene />
+      </Suspense>
+      <Preloader onDone={() => setReady(true)} />
+      <Cursor />
+      <ScrollProgress />
       <Navigation />
-      <main>
-        <Hero />
+      <main className="relative z-10">
+        <Hero ready={ready} />
         <About />
         <Experience />
         <Projects />
         <Contact />
       </main>
-      <Footer />
-      <Toaster 
-        position="bottom-right" 
+      <div className="relative z-10">
+        <Footer />
+      </div>
+      <Toaster
+        position="bottom-right"
         toastOptions={{
           style: {
-            background: '#2a2a2a',
+            background: 'rgba(20,20,24,0.9)',
             color: '#fff',
             border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(12px)',
           },
         }}
       />

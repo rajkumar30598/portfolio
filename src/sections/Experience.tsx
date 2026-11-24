@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useReducedMotion } from '@/hooks/useScrollProgress';
-import { Calendar, MapPin, Briefcase } from 'lucide-react';
+import { Calendar, MapPin, Briefcase, GraduationCap, Trophy } from 'lucide-react';
+import { RevealText, SectionLabel, TiltCard } from '@/components/motion';
+import { prefersReducedMotion } from '@/lib/motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -57,219 +58,132 @@ const experiences = [
 
 export function Experience() {
   const sectionRef = useRef<HTMLElement>(null);
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
-
     const section = sectionRef.current;
-    const timeline = timelineRef.current;
-    const cards = cardsRef.current.filter(Boolean);
-
-    if (!section || !timeline || cards.length === 0) return;
-
-    const triggers: ScrollTrigger[] = [];
-
+    if (!section || prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
-      // Timeline line animation
-      gsap.set(timeline, { scaleY: 0, transformOrigin: 'top' });
-
-      const timelineTrigger = ScrollTrigger.create({
-        trigger: section,
-        start: 'top 60%',
-        once: true,
-        onEnter: () => {
-          gsap.to(timeline, {
-            scaleY: 1,
-            duration: 1.2,
-            ease: 'expo.out',
-          });
-        },
-      });
-      triggers.push(timelineTrigger);
-
-      // Card animations
-      cards.forEach((card, index) => {
-        if (!card) return;
-
-        const isLeft = index % 2 === 0;
-        const xOffset = isLeft ? -100 : 100;
-        const rotateY = isLeft ? 15 : -15;
-
-        gsap.set(card, {
-          x: xOffset,
-          rotateY,
+      // the timeline line draws itself as you scroll
+      gsap.fromTo(
+        '.xp-line-fill',
+        { scaleY: 0 },
+        {
+          scaleY: 1,
+          ease: 'none',
+          scrollTrigger: { trigger: '.xp-list', start: 'top 65%', end: 'bottom 65%', scrub: 0.6 },
+        }
+      );
+      gsap.utils.toArray<HTMLElement>('.xp-item').forEach((item, i) => {
+        const fromLeft = i % 2 === 0;
+        gsap.from(item.querySelector('.xp-card'), {
+          x: fromLeft ? -120 : 120,
+          rotateY: fromLeft ? 25 : -25,
           opacity: 0,
+          duration: 1.2,
+          ease: 'expo.out',
+          scrollTrigger: { trigger: item, start: 'top 80%', once: true },
         });
-
-        const cardTrigger = ScrollTrigger.create({
-          trigger: card,
-          start: 'top 75%',
-          once: true,
-          onEnter: () => {
-            gsap.to(card, {
-              x: 0,
-              rotateY: 0,
-              opacity: 1,
-              duration: 0.8,
-              ease: 'expo.out',
-              delay: index * 0.2,
-            });
-          },
+        gsap.from(item.querySelector('.xp-dot'), {
+          scale: 0,
+          duration: 0.8,
+          ease: 'back.out(3)',
+          scrollTrigger: { trigger: item, start: 'top 65%', once: true },
         });
-        triggers.push(cardTrigger);
+      });
+      gsap.from('.xp-extra', {
+        y: 60,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.15,
+        ease: 'expo.out',
+        scrollTrigger: { trigger: '.xp-extras', start: 'top 85%', once: true },
       });
     }, section);
-
-    return () => {
-      triggers.forEach((st) => st.kill());
-      ctx.revert();
-    };
-  }, [prefersReducedMotion]);
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <section
-      id="experience"
-      ref={sectionRef}
-      className="relative py-16 sm:py-24 lg:py-32 bg-[#1a1a1a] overflow-hidden"
-    >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #d3e97a 1px, transparent 0)`,
-            backgroundSize: '40px 40px',
-          }}
+    <section id="experience" ref={sectionRef} className="relative py-24 sm:py-32 lg:py-40">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10">
+        <SectionLabel index="02" label="Experience" />
+        <RevealText
+          text="My professional journey"
+          className="mb-16 font-display text-5xl leading-[0.95] text-white sm:text-6xl lg:mb-24 lg:text-8xl"
         />
-      </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10">
-        {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16 lg:mb-20">
-          <span className="text-[#d3e97a] text-sm font-medium tracking-widest uppercase mb-4 block">
-            Experience
-          </span>
-          <h2 className="font-display text-5xl sm:text-6xl lg:text-7xl text-white">
-            My Professional Journey
-          </h2>
-        </div>
+        <div className="xp-list relative">
+          <div className="absolute bottom-0 left-4 top-0 w-px bg-white/10 md:left-1/2 md:-translate-x-1/2">
+            <div className="xp-line-fill h-full w-full origin-top bg-gradient-to-b from-[#d3e97a] via-[#38d9f5] to-[#7c5cff] shadow-[0_0_12px_rgba(211,233,122,0.6)]" />
+          </div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Timeline Line */}
-          <div
-            ref={timelineRef}
-            className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[#d3e97a] via-[#d3e97a]/50 to-transparent md:-translate-x-1/2"
-          />
-
-          {/* Experience Cards */}
-          <div className="space-y-16">
+          <div className="space-y-16 lg:space-y-24">
             {experiences.map((exp, index) => (
               <div
                 key={exp.id}
-                className={`relative flex flex-col md:flex-row items-start md:items-center gap-8 ${
+                className={`xp-item relative flex flex-col gap-8 md:items-center ${
                   index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
                 }`}
               >
-                {/* Timeline Dot */}
-                <div className="absolute left-4 md:left-1/2 w-4 h-4 bg-[#d3e97a] rounded-full border-4 border-[#1a1a1a] md:-translate-x-1/2 z-10 shadow-[0_0_20px_rgba(211,233,122,0.5)]" />
-
-                {/* Card */}
+                <div className="xp-dot absolute left-4 top-8 z-10 h-5 w-5 -translate-x-1/2 rounded-full border-4 border-[#0b0b0d] bg-[#d3e97a] shadow-[0_0_25px_rgba(211,233,122,0.9)] md:left-1/2 md:top-1/2 md:-translate-y-1/2" />
+                <div className="hidden md:block md:w-1/2" />
                 <div
-                  ref={(el) => { cardsRef.current[index] = el; }}
-                  className={`ml-12 md:ml-0 md:w-[45%] ${
-                    index % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'
-                  }`}
+                  className={`xp-card ml-12 md:ml-0 md:w-1/2 ${index % 2 === 0 ? 'md:pr-16' : 'md:pl-16'}`}
                   style={{ perspective: '1000px' }}
                 >
-                  <div className="group bg-[#2a2a2a] border border-white/10 rounded-2xl p-6 sm:p-8 hover:border-[#d3e97a]/30 hover:bg-[#333333] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
-                    {/* Header */}
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <span className="flex items-center gap-2 text-[#d3e97a] text-sm">
-                        <Briefcase size={14} />
-                        {exp.role}
-                      </span>
-                      <span className="text-white/30">•</span>
-                      <span className="flex items-center gap-2 text-white/60 text-sm">
-                        <Calendar size={14} />
-                        {exp.period}
-                      </span>
+                  <TiltCard className="rounded-3xl" max={6}>
+                    <div className="glass group rounded-3xl p-6 transition-colors duration-500 hover:border-[#d3e97a]/40 sm:p-8">
+                      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+                        <span className="flex items-center gap-2 rounded-full bg-[#d3e97a]/10 px-3 py-1 text-[#d3e97a]">
+                          <Briefcase size={14} />
+                          {exp.role}
+                        </span>
+                        <span className="flex items-center gap-2 text-white/55">
+                          <Calendar size={14} />
+                          {exp.period}
+                        </span>
+                      </div>
+                      <h3 className="mb-1 font-display text-4xl text-white transition-colors group-hover:text-[#d3e97a] sm:text-5xl">
+                        {exp.company}
+                      </h3>
+                      <p className="mb-4 flex items-center gap-2 text-sm text-white/45">
+                        <MapPin size={14} />
+                        {exp.location}
+                      </p>
+                      <p className="mb-6 leading-relaxed text-white/65">{exp.description}</p>
+                      <ul className="space-y-2.5">
+                        {exp.achievements.map((a, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm text-white/70">
+                            <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rotate-45 bg-[#d3e97a]" />
+                            {a}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-
-                    {/* Company */}
-                    <h3 className="font-display text-2xl sm:text-3xl text-white mb-2 group-hover:text-[#d3e97a] transition-colors">
-                      {exp.company}
-                    </h3>
-
-                    {/* Location */}
-                    <p className="flex items-center gap-2 text-white/50 text-sm mb-4">
-                      <MapPin size={14} />
-                      {exp.location}
-                    </p>
-
-                    {/* Description */}
-                    <p className="text-white/60 mb-6 leading-relaxed">
-                      {exp.description}
-                    </p>
-
-                    {/* Achievements */}
-                    <ul className="space-y-2">
-                      {exp.achievements.map((achievement, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-3 text-white/70 text-sm"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#d3e97a] mt-2 flex-shrink-0" />
-                          {achievement}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  </TiltCard>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Education */}
-        <div className="mt-12 pt-8 sm:mt-16 sm:pt-10 lg:mt-24 lg:pt-12 border-t border-white/10">
-          <h3 className="font-display text-2xl text-white mb-8">Education</h3>
-          <div className="bg-[#2a2a2a] border border-white/10 rounded-2xl p-6 sm:p-8 hover:border-[#d3e97a]/30 transition-all duration-300">
-            <div className="flex flex-wrap items-center gap-3 mb-3">
-              <span className="text-[#d3e97a] text-sm font-medium">
-                2015 - 2019
-              </span>
-              <span className="text-white/30">•</span>
-              <span className="text-white/60 text-sm">Karur, Tamil Nadu</span>
+        <div className="xp-extras mt-24 grid gap-6 md:grid-cols-2">
+          <div className="xp-extra glass rounded-3xl p-6 transition-colors duration-500 hover:border-[#d3e97a]/40 sm:p-8">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d3e97a]/10 text-[#d3e97a]">
+              <GraduationCap size={22} />
             </div>
-            <h4 className="font-display text-xl sm:text-2xl text-white mb-1">
-              B.E. in Computer Science
-            </h4>
-            <p className="text-white/60">
-              Chettinad College of Engineering and Technology
-            </p>
+            <p className="mb-2 text-sm text-[#d3e97a]">2015 – 2019 · Karur, Tamil Nadu</p>
+            <h4 className="mb-1 font-display text-3xl text-white">B.E. in Computer Science</h4>
+            <p className="text-white/60">Chettinad College of Engineering and Technology</p>
           </div>
-        </div>
-
-        {/* Achievement */}
-        <div className="mt-8 bg-gradient-to-r from-[#d3e97a]/10 to-transparent border border-[#d3e97a]/20 rounded-2xl p-6 sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-[#d3e97a]/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-[#d3e97a] text-lg">🏆</span>
+          <div className="xp-extra relative overflow-hidden rounded-3xl border border-[#d3e97a]/25 bg-gradient-to-br from-[#d3e97a]/15 via-[#d3e97a]/5 to-transparent p-6 backdrop-blur-md sm:p-8">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d3e97a]/20 text-[#d3e97a]">
+              <Trophy size={22} />
             </div>
-            <div>
-              <h4 className="text-white font-medium mb-2">
-                Finalist at Smart India Hackathon 2019
-              </h4>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Collaborated with a team to build a digital platform aimed at
-                connecting farmers directly with buyers, helping eliminate
-                middlemen and improve profits for the agricultural community.
-              </p>
-            </div>
+            <h4 className="mb-2 font-display text-3xl text-white">Finalist, Smart India Hackathon 2019</h4>
+            <p className="text-sm leading-relaxed text-white/65">
+              Built a digital platform with a team to connect farmers directly with buyers, cutting out
+              middlemen and improving profits for the agricultural community.
+            </p>
           </div>
         </div>
       </div>

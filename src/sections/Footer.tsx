@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useReducedMotion } from '@/hooks/useScrollProgress';
+import { scrollToId } from '@/lib/motion';
 import { Linkedin, Github, Mail, Heart } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -9,6 +10,7 @@ gsap.registerPlugin(ScrollTrigger);
 const quickLinks = [
   { label: 'Home', href: '#home' },
   { label: 'About', href: '#about' },
+  { label: 'Experience', href: '#experience' },
   { label: 'Projects', href: '#projects' },
   { label: 'Contact', href: '#contact' },
 ];
@@ -74,16 +76,13 @@ export function Footer() {
   }, [prefersReducedMotion]);
 
   const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    scrollToId(href);
   };
 
   return (
     <footer
       ref={footerRef}
-      className="relative py-10 sm:py-14 lg:py-16 bg-[#161616] border-t border-white/10"
+      className="relative overflow-hidden border-t border-white/10 bg-[#0b0b0d]/70 py-10 backdrop-blur-xl sm:py-14 lg:py-16"
     >
       <div
         ref={contentRef}
@@ -103,7 +102,7 @@ export function Footer() {
               Rajkumar V
             </a>
             <p className="text-white/50 text-sm leading-relaxed">
-              Frontend Developer crafting digital experiences with clean code
+              Frontend developer crafting digital experiences with clean code
               and creative design.
             </p>
           </div>
@@ -148,6 +147,14 @@ export function Footer() {
             </div>
           </div>
         </div>
+
+        {/* Giant name */}
+        <p
+          aria-hidden="true"
+          className="footer-animate mb-8 select-none bg-gradient-to-b from-white/15 to-transparent bg-clip-text text-center font-display text-[18vw] leading-[0.8] text-transparent lg:text-[14rem]"
+        >
+          RAJKUMAR V
+        </p>
 
         {/* Divider */}
         <div className="footer-animate h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8" />

@@ -1,307 +1,182 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useReducedMotion } from '@/hooks/useScrollProgress';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone, MapPin, Send, Linkedin, Github } from 'lucide-react';
+import { ArrowUpRight, Github, Linkedin, Mail, MapPin, Phone, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { Magnetic, RevealText, SectionLabel } from '@/components/motion';
+import { prefersReducedMotion } from '@/lib/motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const EMAIL = 'rajkumar30598@gmail.com';
+
+const contacts = [
+  { icon: Mail, label: 'Email', value: EMAIL, href: `mailto:${EMAIL}` },
+  { icon: Phone, label: 'Phone', value: '+91-97894-54245', href: 'tel:+919789454245' },
+  { icon: MapPin, label: 'Location', value: 'Bangalore, India' },
+];
+
+const fieldClass =
+  'peer w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 pb-3 pt-7 text-white outline-none transition-all duration-300 placeholder:text-transparent focus:border-[#d3e97a] focus:bg-white/[0.06] focus:shadow-[0_0_0_4px_rgba(211,233,122,0.12)]';
+const labelClass =
+  'pointer-events-none absolute left-5 top-5 text-white/40 transition-all duration-300 peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-[#d3e97a] peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs';
+
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
-  const infoRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
-
     const section = sectionRef.current;
-    const headline = headlineRef.current;
-    const info = infoRef.current;
-    const form = formRef.current;
-
-    if (!section || !headline || !info || !form) return;
-
-    const triggers: ScrollTrigger[] = [];
-
+    if (!section || prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
-      // Split headline into words
-      const text = headline.textContent || '';
-      headline.innerHTML = text
-        .split(' ')
-        .map((word) => `<span class="inline-block overflow-hidden mr-[0.25em]"><span class="word-inner inline-block">${word}</span></span>`)
-        .join('');
-
-      const words = headline.querySelectorAll('.word-inner');
-
-      // Initial states
-      gsap.set(words, { y: '100%', opacity: 0 });
-      gsap.set(info.children, { x: -50, opacity: 0 });
-      gsap.set(form, { scale: 0.95, opacity: 0 });
-
-      // Scroll-triggered animations
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top 70%',
-          once: true,
-        },
-      });
-
-      // Headline words
-      tl.to(words, {
-        y: '0%',
-        opacity: 1,
-        duration: 0.7,
+      gsap.from('.contact-item', {
+        x: -60,
+        opacity: 0,
+        duration: 1,
         stagger: 0.1,
         ease: 'expo.out',
+        scrollTrigger: { trigger: '.contact-items', start: 'top 85%', once: true },
       });
-
-      // Info items
-      tl.to(
-        info.children,
+      gsap.from('.contact-form', {
+        y: 80,
+        rotateX: -12,
+        opacity: 0,
+        duration: 1.3,
+        ease: 'expo.out',
+        scrollTrigger: { trigger: '.contact-form', start: 'top 85%', once: true },
+      });
+      gsap.fromTo(
+        '.contact-giant',
+        { xPercent: 10 },
         {
-          x: 0,
-          opacity: 1,
-          duration: 0.5,
-          stagger: 0.1,
-          ease: 'expo.out',
-        },
-        '-=0.4'
+          xPercent: -30,
+          ease: 'none',
+          scrollTrigger: { trigger: section, start: 'top bottom', end: 'bottom top', scrub: true },
+        }
       );
-
-      // Form
-      tl.to(
-        form,
-        {
-          scale: 1,
-          opacity: 1,
-          duration: 0.7,
-          ease: 'expo.out',
-        },
-        '-=0.5'
-      );
-
-      if (tl.scrollTrigger) {
-        triggers.push(tl.scrollTrigger);
-      }
     }, section);
+    return () => ctx.revert();
+  }, []);
 
-    return () => {
-      triggers.forEach((st) => st.kill());
-      ctx.revert();
-    };
-  }, [prefersReducedMotion]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Opens the visitor's mail app with the message filled in, so it really reaches the inbox.
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    toast.success('Message sent successfully! I\'ll get back to you soon.');
-    setFormData({ name: '', email: '', message: '' });
-    setIsSubmitting(false);
+    const subject = `Portfolio enquiry from ${form.name}`;
+    const body = `${form.message}\n\n— ${form.name} (${form.email})`;
+    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    toast.success('Opening your email app with the message ready to send.');
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   return (
-    <section
-      id="contact"
-      ref={sectionRef}
-      className="relative py-16 sm:py-24 lg:py-32 bg-[#1a1a1a] overflow-hidden"
-    >
-      {/* Background Decoration */}
-      <div className="absolute top-0 left-0 w-1/2 h-full opacity-5">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full border border-[#d3e97a]" />
+    <section id="contact" ref={sectionRef} className="relative overflow-hidden py-24 sm:py-32 lg:py-40">
+      <div
+        aria-hidden="true"
+        className="contact-giant pointer-events-none absolute left-0 top-10 whitespace-nowrap font-display text-[22vw] leading-none text-transparent [-webkit-text-stroke:1px_rgba(211,233,122,0.15)]"
+      >
+        Let's talk · Let's build · Let's talk ·
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16">
-          {/* Left Column - Info */}
+      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10">
+        <SectionLabel index="04" label="Contact" />
+        <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
           <div>
-            <h2
-              ref={headlineRef}
-              className="font-display text-5xl sm:text-6xl lg:text-7xl text-white mb-6"
-            >
-              Let's Work Together
-            </h2>
-
-            <p className="text-lg text-white/60 mb-12 leading-relaxed">
-              Have a project in mind or just want to chat? I'm always open to
-              discussing new opportunities and interesting ideas.
+            <RevealText
+              text="Let's work together."
+              className="font-display text-6xl leading-[0.9] text-white sm:text-7xl lg:text-8xl"
+            />
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-white/60">
+              Have a project in mind or just want to chat? I'm always open to discussing new opportunities and
+              interesting ideas.
             </p>
 
-            <div ref={infoRef} className="space-y-6">
-              {/* Email */}
-              <a
-                href="mailto:rajkumar30598@gmail.com"
-                className="flex items-center gap-4 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-[#d3e97a]/10 border border-[#d3e97a]/20 flex items-center justify-center group-hover:bg-[#d3e97a]/20 transition-colors">
-                  <Mail size={20} className="text-[#d3e97a]" />
-                </div>
-                <div>
-                  <p className="text-white/50 text-sm">Email</p>
-                  <p className="text-white group-hover:text-[#d3e97a] transition-colors">
-                    rajkumar30598@gmail.com
-                  </p>
-                </div>
-              </a>
+            <div className="contact-items mt-12 space-y-4">
+              {contacts.map(({ icon: Icon, label, value, href }) => {
+                const inner = (
+                  <>
+                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-[#d3e97a]/20 bg-[#d3e97a]/10 text-[#d3e97a] transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:bg-[#d3e97a] group-hover:text-[#0b0b0d]">
+                      <Icon size={22} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm text-white/45">{label}</span>
+                      <span className="block truncate text-lg text-white transition-colors group-hover:text-[#d3e97a]">
+                        {value}
+                      </span>
+                    </span>
+                    {href && (
+                      <ArrowUpRight
+                        size={20}
+                        className="text-white/30 transition-all duration-500 group-hover:rotate-45 group-hover:text-[#d3e97a]"
+                      />
+                    )}
+                  </>
+                );
+                const cls =
+                  'contact-item glass group flex items-center gap-5 rounded-3xl p-4 pr-6 transition-colors duration-500 hover:border-[#d3e97a]/40';
+                return href ? (
+                  <a key={label} href={href} className={cls}>
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={label} className={cls}>
+                    {inner}
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Phone */}
-              <a
-                href="tel:+919789454245"
-                className="flex items-center gap-4 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-[#d3e97a]/10 border border-[#d3e97a]/20 flex items-center justify-center group-hover:bg-[#d3e97a]/20 transition-colors">
-                  <Phone size={20} className="text-[#d3e97a]" />
-                </div>
-                <div>
-                  <p className="text-white/50 text-sm">Phone</p>
-                  <p className="text-white group-hover:text-[#d3e97a] transition-colors">
-                    +91-97894-54245
-                  </p>
-                </div>
-              </a>
-
-              {/* Location */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#d3e97a]/10 border border-[#d3e97a]/20 flex items-center justify-center">
-                  <MapPin size={20} className="text-[#d3e97a]" />
-                </div>
-                <div>
-                  <p className="text-white/50 text-sm">Location</p>
-                  <p className="text-white">Bangalore, India</p>
-                </div>
-              </div>
-
-              {/* Social Links */}
-              <div className="flex items-center gap-4 pt-6">
-                <a
-                  href="https://www.linkedin.com/in/rajkumar-v-b11282225/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-[#d3e97a] hover:text-[#161616] hover:border-[#d3e97a] hover:scale-110 transition-all duration-300"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin size={20} />
-                </a>
-                <a
-                  href="https://github.com/rajkumar30598"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-[#d3e97a] hover:text-[#161616] hover:border-[#d3e97a] hover:scale-110 transition-all duration-300"
-                  aria-label="GitHub"
-                >
-                  <Github size={20} />
-                </a>
-              </div>
+            <div className="contact-item mt-8 flex gap-3">
+              {[
+                { href: 'https://www.linkedin.com/in/rajkumar-v-b11282225/', label: 'LinkedIn', icon: Linkedin },
+                { href: 'https://github.com/rajkumar30598', label: 'GitHub', icon: Github },
+              ].map(({ href, label, icon: Icon }) => (
+                <Magnetic key={label} strength={0.5}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-all duration-300 hover:border-[#d3e97a] hover:bg-[#d3e97a] hover:text-[#0b0b0d]"
+                  >
+                    <Icon size={20} />
+                  </a>
+                </Magnetic>
+              ))}
             </div>
           </div>
 
-          {/* Right Column - Form */}
-          <div className="bg-[#2a2a2a] border border-white/10 rounded-2xl p-6 sm:p-8">
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-              {/* Name */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="name"
-                  className="text-white/60 text-sm font-medium"
-                >
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Your name"
-                  required
-                  className="bg-[#1a1a1a] border-white/10 text-white placeholder:text-white/30 focus:border-[#d3e97a] focus:ring-[#d3e97a]/20 transition-all"
-                />
+          <div style={{ perspective: '1200px' }}>
+            <form
+              onSubmit={handleSubmit}
+              className="contact-form glass relative space-y-5 overflow-hidden rounded-[2rem] p-6 sm:p-10"
+            >
+              <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#d3e97a]/20 blur-[90px]" />
+              <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[#7c5cff]/25 blur-[90px]" />
+              <h3 className="relative font-display text-4xl text-white">Send a message</h3>
+              <div className="relative">
+                <input id="name" name="name" placeholder="Name" required value={form.name} onChange={onChange} className={fieldClass} />
+                <label htmlFor="name" className={labelClass}>Your name</label>
               </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="text-white/60 text-sm font-medium"
-                >
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="your@email.com"
-                  required
-                  className="bg-[#1a1a1a] border-white/10 text-white placeholder:text-white/30 focus:border-[#d3e97a] focus:ring-[#d3e97a]/20 transition-all"
-                />
+              <div className="relative">
+                <input id="email" name="email" type="email" placeholder="Email" required value={form.email} onChange={onChange} className={fieldClass} />
+                <label htmlFor="email" className={labelClass}>Your email</label>
               </div>
-
-              {/* Message */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="message"
-                  className="text-white/60 text-sm font-medium"
-                >
-                  Message
-                </label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  placeholder="Tell me about your project..."
-                  required
-                  rows={5}
-                  className="bg-[#1a1a1a] border-white/10 text-white placeholder:text-white/30 focus:border-[#d3e97a] focus:ring-[#d3e97a]/20 transition-all resize-none"
-                />
+              <div className="relative">
+                <textarea id="message" name="message" rows={5} placeholder="Message" required value={form.message} onChange={onChange} className={`${fieldClass} resize-none`} />
+                <label htmlFor="message" className={labelClass}>Tell me about your project…</label>
               </div>
-
-              {/* Submit */}
-              <Button
+              <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#d3e97a] text-[#161616] hover:bg-[#e8f5a8] hover:scale-[1.02] transition-all duration-300 font-medium py-6 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full overflow-hidden rounded-2xl bg-[#d3e97a] py-5 font-medium text-[#0b0b0d]"
               >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-[#161616]/30 border-t-[#161616] rounded-full animate-spin" />
-                    Sending...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    Send Message
-                    <Send size={18} />
-                  </span>
-                )}
-              </Button>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  Send message
+                  <Send size={18} className="transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:rotate-12" />
+                </span>
+                <span className="absolute inset-0 -translate-x-full bg-white transition-transform duration-500 ease-out group-hover:translate-x-0" />
+              </button>
             </form>
           </div>
         </div>

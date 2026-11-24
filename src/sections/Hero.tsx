@@ -1,330 +1,180 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowDown, Linkedin, Github, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useReducedMotion } from '@/hooks/useScrollProgress';
+import { ArrowDownRight, Github, Linkedin, Mail } from 'lucide-react';
+import { Magnetic } from '@/components/motion';
+import { prefersReducedMotion, scrollToId } from '@/lib/motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export function Hero() {
+const ROLES = ['design systems', 'real-time web apps', 'mobile apps', 'AI-powered tools'];
+
+const socials = [
+  { href: 'https://www.linkedin.com/in/rajkumar-v-b11282225/', label: 'LinkedIn', icon: Linkedin },
+  { href: 'https://github.com/rajkumar30598', label: 'GitHub', icon: Github },
+  { href: 'mailto:rajkumar30598@gmail.com', label: 'Email', icon: Mail },
+];
+
+function SplitChars({ text, className }: { text: string; className?: string }) {
+  return (
+    <span className={className} aria-label={text}>
+      {text.split('').map((c, i) => (
+        <span key={i} aria-hidden="true" className="inline-block overflow-hidden align-bottom">
+          <span className="hero-char inline-block will-change-transform">{c === ' ' ? ' ' : c}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+export function Hero({ ready }: { ready: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLDivElement>(null);
-  const decorRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const roleRef = useRef<HTMLSpanElement>(null);
+  const [roleIndex, setRoleIndex] = useState(0);
 
+  // Intro timeline once the preloader finishes
   useEffect(() => {
-    if (prefersReducedMotion) return;
-
     const section = sectionRef.current;
-    const headline = headlineRef.current;
-    const content = contentRef.current;
-    const image = imageRef.current;
-    const decor = decorRef.current;
-
-    if (!section || !headline || !content || !image || !decor) return;
-
-    const triggers: ScrollTrigger[] = [];
-
+    if (!section || prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
-      // Split headline into characters
-      const text = headline.textContent || '';
-      headline.innerHTML = text
-        .split('')
-        .map((char) =>
-          char === ' '
-            ? '<span class="inline-block">&nbsp;</span>'
-            : `<span class="inline-block char">${char}</span>`
-        )
-        .join('');
-
-      const chars = headline.querySelectorAll('.char');
-
-      // Initial states
-      gsap.set(chars, { opacity: 0, rotateX: -90, y: 50 });
-      gsap.set(content.children, { opacity: 0, y: 30 });
-      gsap.set(image, { opacity: 0, x: 100, rotateY: 30 });
-      gsap.set(decor.children, { opacity: 0, scale: 0 });
-
-      // Entrance timeline
-      const entranceTl = gsap.timeline({ delay: 0.3 });
-
-      // Character animation
-      entranceTl.to(chars, {
-        opacity: 1,
-        rotateX: 0,
-        y: 0,
-        duration: 0.8,
-        stagger: 0.06,
-        ease: 'expo.out',
-      });
-
-      // Content fade in
-      entranceTl.to(
-        content.children,
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: 'expo.out',
-        },
-        '-=0.4'
-      );
-
-      // Image slide in
-      entranceTl.to(
-        image,
-        {
-          opacity: 1,
-          x: 0,
-          rotateY: 0,
-          duration: 1,
-          ease: 'expo.out',
-        },
-        '-=0.6'
-      );
-
-      // Decorative elements
-      entranceTl.to(
-        decor.children,
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: 'back.out(1.7)',
-        },
-        '-=0.5'
-      );
-
-      // Scroll parallax effects
-      const scrollTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 1,
-        },
-      });
-
-      scrollTl.to(headline, {
-        y: -80,
-        opacity: 0.3,
-        ease: 'none',
-      });
-
-      scrollTl.to(
-        image,
-        {
-          y: -40,
-          scale: 1.05,
-          ease: 'none',
-        },
-        0
-      );
-
-      scrollTl.to(
-        decor.children,
-        {
-          y: -100,
-          opacity: 0,
-          ease: 'none',
-        },
-        0
-      );
-
-      if (scrollTl.scrollTrigger) {
-        triggers.push(scrollTl.scrollTrigger);
-      }
+      gsap.set('.hero-char', { yPercent: 120, rotateX: -90, opacity: 0 });
+      gsap.set('.hero-fade', { y: 30, opacity: 0 });
+      gsap.set('.hero-rule', { scaleX: 0 });
     }, section);
+    if (!ready) return () => ctx.revert();
 
-    return () => {
-      triggers.forEach((st) => st.kill());
-      ctx.revert();
-    };
-  }, [prefersReducedMotion]);
+    const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
+    ctx.add(() => {
+      tl.to('.hero-char', { yPercent: 0, rotateX: 0, opacity: 1, duration: 1.4, stagger: 0.035 })
+        .to('.hero-rule', { scaleX: 1, duration: 1.2 }, '-=1.1')
+        .to('.hero-fade', { y: 0, opacity: 1, duration: 1, stagger: 0.08 }, '-=1');
 
-  const scrollToProjects = () => {
-    const element = document.querySelector('#projects');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+      // Parallax out as the user scrolls away
+      gsap.to(contentRef.current, {
+        yPercent: -25,
+        opacity: 0,
+        ease: 'none',
+        scrollTrigger: { trigger: section, start: 'top top', end: 'bottom top', scrub: true },
+      });
+      gsap.to('.hero-scroll', {
+        opacity: 0,
+        scrollTrigger: { trigger: section, start: 'top top', end: '20% top', scrub: true },
+      });
+    });
+    return () => ctx.revert();
+  }, [ready]);
 
-  const scrollToContact = () => {
-    const element = document.querySelector('#contact');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // Rotating role text
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const id = setInterval(() => {
+      const el = roleRef.current;
+      if (!el) return;
+      gsap.to(el, {
+        yPercent: -100,
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power3.in',
+        onComplete: () => {
+          setRoleIndex((i) => (i + 1) % ROLES.length);
+          gsap.fromTo(el, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.6, ease: 'expo.out' });
+        },
+      });
+    }, 2600);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <section
-      id="home"
-      ref={sectionRef}
-      className="relative min-h-screen flex items-center overflow-hidden bg-[#161616]"
-    >
-      {/* Animated Background Gradient */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-1/2 -right-1/4 w-[800px] h-[800px] rounded-full opacity-20"
-          style={{
-            background: 'radial-gradient(circle, rgba(211, 233, 122, 0.15) 0%, transparent 70%)',
-            animation: 'float-slow 15s ease-in-out infinite',
-          }}
-        />
-        <div
-          className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-15"
-          style={{
-            background: 'radial-gradient(circle, rgba(211, 233, 122, 0.1) 0%, transparent 70%)',
-            animation: 'float 12s ease-in-out infinite reverse',
-          }}
-        />
-      </div>
+    <section id="home" ref={sectionRef} className="relative flex min-h-[100svh] items-center overflow-hidden">
+      <div ref={contentRef} className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-24 pt-32 lg:px-10">
+        <div className="hero-fade mb-8 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 backdrop-blur-md">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#d3e97a] opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#d3e97a]" />
+          </span>
+          <span className="text-xs uppercase tracking-[0.25em] text-white/70">SDE 2 · Neutrinos · Bangalore</span>
+        </div>
 
-      {/* Decorative Elements */}
-      <div ref={decorRef} className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-1/4 left-[10%] w-4 h-4 rounded-full bg-[#d3e97a]/30"
-          style={{ animation: 'float 5s ease-in-out infinite' }}
-        />
-        <div
-          className="absolute top-1/3 right-[15%] w-6 h-6 rounded-full border-2 border-[#d3e97a]/20"
-          style={{ animation: 'float-slow 7s ease-in-out infinite' }}
-        />
-        <div
-          className="absolute bottom-1/4 left-[20%] w-3 h-3 rounded-sm bg-[#d3e97a]/20 rotate-45"
-          style={{ animation: 'float 6s ease-in-out infinite 1s' }}
-        />
-      </div>
+        <h1 className="font-display leading-[0.85] text-white [perspective:800px]">
+          <SplitChars text="RAJKUMAR" className="block text-[22vw] sm:text-[17vw] lg:text-[13rem] xl:text-[15rem]" />
+          <span className="flex items-end gap-6">
+            <SplitChars
+              text="V."
+              className="block text-[22vw] text-[#d3e97a] sm:text-[17vw] lg:text-[13rem] xl:text-[15rem]"
+            />
+            <span className="hero-rule mb-[3vw] hidden h-px flex-1 origin-left bg-gradient-to-r from-white/40 to-transparent sm:block lg:mb-12" />
+          </span>
+        </h1>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 py-16 sm:py-24 lg:py-32">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left Content */}
-          <div className="order-2 lg:order-1">
-            <div ref={contentRef}>
-              {/* Eyebrow */}
-              <p className="text-[#d3e97a] text-sm font-medium tracking-widest uppercase mb-4">
-                Frontend Developer
-              </p>
-
-              {/* Headline */}
-              <h1
-                ref={headlineRef}
-                className="font-display text-6xl sm:text-7xl lg:text-8xl xl:text-9xl text-white leading-none mb-6"
-                style={{ perspective: '1000px' }}
-              >
-                RAJKUMAR V
-              </h1>
-
-              {/* Subheadline */}
-              <p className="text-xl sm:text-2xl text-white/80 font-light mb-4">
-                Crafting Digital Experiences with Code & Creativity
-              </p>
-
-              {/* Description */}
-              <p className="text-base text-white/60 max-w-lg mb-8 leading-relaxed">
-                4+ years building scalable, user-focused web applications with Angular, React, and modern technologies. Specializing in real-time systems and performance optimization.
-              </p>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-4 mb-10">
-                <Button
-                  onClick={scrollToProjects}
-                  className="bg-[#d3e97a] text-[#161616] hover:bg-[#e8f5a8] hover:scale-105 transition-all duration-300 font-medium px-8 py-6 text-base group"
-                >
-                  View My Work
-                  <ArrowDown className="ml-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
-                </Button>
-                <Button
-                  onClick={scrollToContact}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/5 hover:border-[#d3e97a]/50 transition-all duration-300 px-8 py-6 text-base"
-                >
-                  Let's Connect
-                </Button>
-              </div>
-
-              {/* Social Links */}
-              <div className="flex items-center gap-4">
-                <a
-                  href="https://www.linkedin.com/in/rajkumar-v-b11282225/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-[#d3e97a] hover:border-[#d3e97a] hover:scale-110 transition-all duration-300"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin size={18} />
-                </a>
-                <a
-                  href="https://github.com/rajkumar30598"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-[#d3e97a] hover:border-[#d3e97a] hover:scale-110 transition-all duration-300"
-                  aria-label="GitHub"
-                >
-                  <Github size={18} />
-                </a>
-                <a
-                  href="mailto:rajkumar30598@gmail.com"
-                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-[#d3e97a] hover:border-[#d3e97a] hover:scale-110 transition-all duration-300"
-                  aria-label="Email"
-                >
-                  <Mail size={18} />
-                </a>
-              </div>
-            </div>
+        <div className="mt-8 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+          <div>
+            <p className="hero-fade text-2xl font-light text-white/85 sm:text-3xl">
+              Frontend engineer who builds{' '}
+              <span className="relative inline-flex overflow-hidden align-bottom">
+                <span ref={roleRef} className="inline-block font-normal text-[#d3e97a]">
+                  {ROLES[roleIndex]}
+                </span>
+              </span>
+            </p>
+            <p className="hero-fade mt-5 max-w-xl text-base leading-relaxed text-white/55">
+              4+ years shipping scalable, user-focused products with Angular, React and React Native, from
+              real-time trading dashboards to apps people install on their phones.
+            </p>
           </div>
 
-          {/* Right Content - Profile Image */}
-          <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-            <div
-              ref={imageRef}
-              className="relative"
-              style={{ perspective: '1000px' }}
-            >
-              {/* Image Container */}
-              <div className="relative group">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-[#d3e97a]/20 rounded-3xl blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
-                {/* Image */}
-                <div className="relative w-64 h-80 sm:w-80 sm:h-96 lg:w-96 lg:h-[480px] rounded-3xl overflow-hidden border border-white/10 transition-all duration-500 group-hover:border-[#d3e97a]/30 group-hover:shadow-[0_0_40px_rgba(211,233,122,0.2)]">
-                  <img
-                    src="/images/profile.jpg"
-                    alt="Rajkumar V"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                </div>
-
-                {/* Floating Badge */}
-                <div
-                  className="absolute -bottom-4 -left-4 bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-3 shadow-xl"
-                  style={{ animation: 'float 4s ease-in-out infinite' }}
+          <div className="flex flex-col gap-8 lg:items-end">
+            <div className="hero-fade flex flex-wrap gap-4">
+              <Magnetic>
+                <button
+                  onClick={() => scrollToId('#projects')}
+                  className="group relative overflow-hidden rounded-full bg-[#d3e97a] px-8 py-4 font-medium text-[#0b0b0d]"
                 >
-                  <p className="text-[#d3e97a] font-display text-2xl">4+</p>
-                  <p className="text-white/60 text-xs">Years Experience</p>
-                </div>
-
-                {/* Tech Stack Badge */}
-                <div
-                  className="absolute -top-4 -right-4 bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-3 shadow-xl"
-                  style={{ animation: 'float 5s ease-in-out infinite 0.5s' }}
+                  <span className="relative z-10 flex items-center gap-2">
+                    View my work
+                    <ArrowDownRight size={18} className="transition-transform duration-300 group-hover:rotate-[-45deg]" />
+                  </span>
+                  <span className="absolute inset-0 translate-y-full rounded-full bg-white transition-transform duration-500 ease-out group-hover:translate-y-0" />
+                </button>
+              </Magnetic>
+              <Magnetic>
+                <button
+                  onClick={() => scrollToId('#contact')}
+                  className="rounded-full border border-white/20 bg-white/[0.03] px-8 py-4 text-white backdrop-blur-md transition-colors duration-300 hover:border-[#d3e97a] hover:text-[#d3e97a]"
                 >
-                  <p className="text-white/60 text-xs mb-1">Specialized in</p>
-                  <p className="text-[#d3e97a] font-medium text-sm">Angular & React</p>
-                </div>
-              </div>
+                  Let's connect
+                </button>
+              </Magnetic>
+            </div>
+            <div className="hero-fade flex items-center gap-3">
+              {socials.map(({ href, label, icon: Icon }) => (
+                <Magnetic key={label} strength={0.5}>
+                  <a
+                    href={href}
+                    target={href.startsWith('http') ? '_blank' : undefined}
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-[#d3e97a] hover:bg-[#d3e97a] hover:text-[#0b0b0d]"
+                  >
+                    <Icon size={18} />
+                  </a>
+                </Magnetic>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
+      <button
+        onClick={() => scrollToId('#about')}
+        className="hero-scroll absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-3 text-[10px] uppercase tracking-[0.4em] text-white/50"
+        aria-label="Scroll to about"
+      >
+        Scroll
+        <span className="relative h-12 w-px overflow-hidden bg-white/15">
+          <span className="absolute left-0 top-0 h-1/2 w-full animate-scroll-line bg-[#d3e97a]" />
+        </span>
+      </button>
     </section>
   );
 }

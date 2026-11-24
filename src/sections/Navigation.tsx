@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { lockScroll, scrollToId } from '@/lib/motion';
 
 const navLinks = [
   { label: 'Home', href: '#home' },
   { label: 'About', href: '#about' },
+  { label: 'Experience', href: '#experience' },
   { label: 'Projects', href: '#projects' },
   { label: 'Contact', href: '#contact' },
 ];
@@ -22,11 +24,12 @@ export function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    lockScroll(isMobileMenuOpen);
+  }, [isMobileMenuOpen]);
+
   const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    scrollToId(href);
     setIsMobileMenuOpen(false);
   };
 
@@ -35,7 +38,7 @@ export function Navigation() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled
-            ? 'bg-[#161616]/95 backdrop-blur-xl border-b border-white/10'
+            ? 'bg-[#0b0b0d]/60 backdrop-blur-xl border-b border-white/10'
             : 'bg-transparent'
         }`}
       >
@@ -50,7 +53,7 @@ export function Navigation() {
               }}
               className="font-display text-2xl text-white hover:text-[#d3e97a] transition-all duration-300 hover:tracking-wider"
             >
-              Rajkumar V
+              Rajkumar<span className="text-[#d3e97a]">.</span>V
             </a>
 
             {/* Desktop Navigation */}
@@ -71,7 +74,7 @@ export function Navigation() {
               ))}
               <Button
                 onClick={() => scrollToSection('#contact')}
-                className="bg-[#d3e97a] text-[#161616] hover:bg-[#e8f5a8] hover:scale-105 transition-all duration-300 font-medium px-6"
+                className="rounded-full bg-[#d3e97a] text-[#0b0b0d] hover:bg-white hover:scale-105 transition-all duration-300 font-medium px-6"
               >
                 Let's Talk
               </Button>
@@ -91,7 +94,7 @@ export function Navigation() {
 
       {/* Mobile Menu */}
       <div
-        className={`fixed inset-0 z-40 bg-[#161616]/98 backdrop-blur-xl transition-all duration-500 md:hidden ${
+        className={`fixed inset-0 z-40 bg-[#0b0b0d]/95 backdrop-blur-xl transition-all duration-500 md:hidden ${
           isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
       >

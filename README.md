@@ -1,6 +1,6 @@
 # Rajkumar V – Portfolio
 
-Personal portfolio site for a front-end developer, built with React, TypeScript, Vite and Tailwind CSS, with scroll-driven animations powered by GSAP.
+Personal portfolio site for a front-end developer, built with React, TypeScript, Vite and Tailwind CSS, with a three.js (React Three Fiber) background scene, GSAP scroll animations and Lenis smooth scrolling.
 
 **Live site:** https://rajkumarv-portfolio.vercel.app
 
@@ -10,12 +10,15 @@ Personal portfolio site for a front-end developer, built with React, TypeScript,
 ## Features
 
 - **Single-page layout** with sections: Hero, About, Experience, Projects and Contact, plus a Navigation bar and Footer
-- **GSAP + ScrollTrigger animations**: character-by-character hero entrance, parallax effects, an animated experience timeline, and staggered reveals for skills and project cards
+- **three.js scene** (`src/three/BackgroundScene.tsx`): a noise-displaced shader orb, particle field and floating shapes behind the whole page. It follows the scroll position and pointer, and gets more turbulent when you scroll fast. Loaded lazily in its own chunk.
+- **Motion** (`src/components/motion.tsx`): preloader, custom cursor, magnetic buttons, 3D tilt cards, word-by-word heading reveals, scroll-reactive tech marquees, count-up stats and a scroll progress bar
+- **Projects**: pinned horizontal scroll on desktop, stacked on mobile; app cards show real screenshots in phone and browser frames
+- **Lenis smooth scrolling** synced with GSAP ScrollTrigger (`src/lib/motion.ts`)
 - **Reduced-motion support**: animations are skipped when the user prefers reduced motion
 - **Responsive navigation** with a mobile menu toggle
 - **Skills grid** (JavaScript, TypeScript, Angular, React, RxJS, Redux, Tailwind, WebSocket, Firebase and more)
 - **Projects showcase** with seven project cards: three shipped personal apps (Rookwise, AdFree Tube, PDF Toolkit) with live links, plus four earlier projects
-- **Contact form** with toast feedback via Sonner (submission is currently simulated client-side; no backend is wired up)
+- **Contact form** opens the visitor's email app with the message pre-filled (no backend)
 - **UI primitives** from shadcn/ui (Radix UI + Tailwind), with an `@/` path alias to `src/`
 
 ## Project structure
@@ -41,6 +44,8 @@ public/images/            # profile and project images
 | Vite | ^7.2.4 |
 | Tailwind CSS | ^3.4.19 |
 | GSAP (+ @gsap/react) | ^3.14.2 |
+| three / @react-three/fiber / drei | ^0.182 / ^9.5 / ^10.7 |
+| Lenis | 1.3.4 |
 | Radix UI / shadcn/ui | various |
 | lucide-react (icons) | ^0.562.0 |
 | Sonner (toasts) | ^2.0.7 |
