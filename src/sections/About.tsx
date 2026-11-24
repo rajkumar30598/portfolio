@@ -2,18 +2,18 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUpRight } from 'lucide-react';
-import { BandMarquee, CountUp, ScrubText, SectionLabel } from '@/components/motion';
+import { BandMarquee, RevealText, SectionLabel } from '@/components/motion';
 import { prefersReducedMotion } from '@/lib/motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const stack = ['Angular', 'React', 'TypeScript', 'React Native', 'Next.js', 'RxJS', 'Design Systems', 'WebSocket'];
 
-const stats = [
-  { value: '4+', label: 'Years building products' },
-  { value: '10+', label: 'Projects delivered' },
-  { value: '3', label: 'Apps shipped on my own' },
-  { value: '3', label: 'Companies' },
+const facts = [
+  { label: 'Currently', value: 'SDE 2, Neutrinos' },
+  { label: 'Previously', value: 'Ninjacart · Gloify' },
+  { label: 'Focus', value: 'Design systems · Real-time UI' },
+  { label: 'Stack', value: 'Angular · React · React Native' },
 ];
 
 const services = [
@@ -40,6 +40,14 @@ export function About() {
         yPercent: 10,
         ease: 'none',
         scrollTrigger: { trigger: '.about-photo', start: 'top bottom', end: 'bottom top', scrub: true },
+      });
+      gsap.from('.about-copy p', {
+        y: 30,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.12,
+        ease: 'expo.out',
+        scrollTrigger: { trigger: '.about-copy', start: 'top 85%', once: true },
       });
       gsap.from('.about-stat', {
         y: 40,
@@ -71,47 +79,43 @@ export function About() {
         <div className="mx-auto max-w-[1600px] px-5 pb-24 pt-20 sm:px-8 lg:px-12 lg:pb-32 lg:pt-28">
           <SectionLabel index="01" label="About" />
 
-          <ScrubText
-            text="I'm Rajkumar, a frontend engineer in Bangalore. For 4+ years I've built *real-time* trading systems, *design systems* used across products, and *apps* people install on their phones."
-            className="max-w-5xl font-display text-[1.75rem] font-semibold leading-[1.15] sm:text-4xl sm:leading-[1.15] lg:text-[3.4rem] lg:leading-[1.12]"
-          />
-
-          <div className="mt-16 grid gap-10 lg:mt-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-            <div className="about-photo relative aspect-[4/5] max-w-md overflow-hidden rounded-[2rem]">
-              <img src="/images/profile.jpg" alt="Rajkumar V" className="h-[112%] w-full -translate-y-[6%] object-cover" />
-              <span className="absolute bottom-4 left-4 rounded-full bg-paper/90 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
-                Rajkumar V — Bangalore
-              </span>
-            </div>
-
-            <div className="flex flex-col justify-between gap-12">
-              <div className="space-y-5 text-lg leading-relaxed text-white/70">
+          <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20">
+            <div>
+              <RevealText
+                text="Building interfaces that *feel* *effortless.*"
+                className="max-w-2xl font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.6rem]"
+              />
+              <div className="about-copy mt-8 max-w-xl space-y-5 text-lg leading-relaxed text-white/65">
                 <p>
-                  I started out curious about how the web works and turned it into a career: high-volume, real-time
-                  order management at <strong className="font-semibold text-white">Ninjacart</strong>, and now a
-                  platform-wide component library and design system at{' '}
+                  I'm a frontend engineer in Bangalore with 4+ years of building production web apps. I started at{' '}
+                  <strong className="font-semibold text-white">Gloify</strong> on live fintech dashboards, spent nearly
+                  four years at <strong className="font-semibold text-white">Ninjacart</strong> on high-volume, real-time
+                  order management, and now build a platform-wide component library and design system at{' '}
                   <strong className="font-semibold text-white">Neutrinos</strong>.
                 </p>
                 <p>
                   Outside work I ship my own products end to end: a chess coach, an ad-free video app and a privacy-first
-                  PDF toolkit. I care about performance, clean component architecture and interfaces that feel
-                  effortless.
+                  PDF toolkit. I care about performance, clean component architecture and details people can feel.
                 </p>
               </div>
 
-              <div className="about-stats grid grid-cols-2 border-t border-white/10 sm:grid-cols-4">
-                {stats.map((s, i) => (
-                  <div
-                    key={s.label}
-                    className={`about-stat border-b border-white/10 py-6 sm:border-b-0 ${i % 2 === 1 ? 'pl-5' : ''} ${
-                      i > 0 ? 'sm:border-l sm:pl-5' : ''
-                    }`}
-                  >
-                    <CountUp value={s.value} className="block font-display text-5xl font-bold tracking-tight lg:text-6xl" />
-                    <p className="mt-2 text-sm text-white/60">{s.label}</p>
+              <dl className="about-stats mt-12 grid max-w-xl grid-cols-2 gap-x-8 border-t border-white/10">
+                {facts.map((f) => (
+                  <div key={f.label} className="about-stat border-b border-white/10 py-5">
+                    <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40">{f.label}</dt>
+                    <dd className="mt-1.5 font-medium text-white">{f.value}</dd>
                   </div>
                 ))}
-              </div>
+              </dl>
+            </div>
+
+            <div className="about-photo relative aspect-[4/5] w-full max-w-md self-start overflow-hidden rounded-[2rem] lg:justify-self-end">
+              <img src="/images/profile.jpg" alt="Rajkumar V" className="h-[112%] w-full -translate-y-[6%] object-cover" />
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+              <span className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-sm font-medium text-white backdrop-blur-md">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                Bangalore, India
+              </span>
             </div>
           </div>
 
