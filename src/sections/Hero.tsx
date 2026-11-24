@@ -97,7 +97,7 @@ export function Hero({ ready }: { ready: boolean }) {
         <h1 className="whitespace-nowrap font-display text-[17vw] leading-[0.85] text-white [perspective:800px] sm:text-[15vw] lg:text-[11.5rem] xl:text-[13rem]">
           <SplitChars text="RAJKUMAR" />
           <span className="inline-block w-[0.22em]" aria-hidden="true" />
-          <SplitChars text="V." className="text-brand" />
+          <SplitChars text="V" className="text-brand" />
         </h1>
 
         <div className="mt-8 flex max-w-2xl flex-col gap-10">
