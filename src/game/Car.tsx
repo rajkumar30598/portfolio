@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { RoundedBox } from '@react-three/drei';
+import { CuboidCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useTheme } from '@/lib/theme';
 import { input } from './input';
 import { COINS, COLLIDERS, DRIVE_RADIUS, START, STATIONS, groundHeight } from './layout';
-import { cones, hud, playerPos, resetCones, spawnPuff } from './runtime';
+import { hud, playerPos, spawnPuff } from './runtime';
 import { gameStore } from './store';
 import { sfx } from './sound';
 
@@ -15,13 +17,16 @@ const BOOST = 26;
 const REVERSE = 8;
 
 const look = new THREE.Vector3();
+const quat = new THREE.Quaternion();
+const euler = new THREE.Euler();
 
 export function Car() {
   const theme = useTheme();
   const paint = `rgb(${theme.brand.join(',')})`;
-  const accent = `rgb(${theme.brand2.join(',')})`;
 
   const root = useRef<THREE.Group>(null);
+  const rb = useRef<RapierRigidBody>(null);
+  const lastBonk = useRef(0);
   const body = useRef<THREE.Group>(null);
   const wheels = useRef<(THREE.Group | null)[]>([]);
   const frontPivots = useRef<(THREE.Group | null)[]>([]);
@@ -50,6 +55,16 @@ export function Car() {
     if (spot.current && spotTarget.current) spot.current.target = spotTarget.current;
   }, []);
 
+  // dev-only test hook: place the car precisely (stripped from production builds)
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __placeCar?: (x: number, z: number, yaw: number) => void };
+    w.__placeCar = (x, z, yaw) => Object.assign(sim.current, { x, z, yaw, camYaw: yaw, speed: 0, vx: 0, vz: 0, y: 0, vy: 0 });
+    return () => {
+      delete w.__placeCar;
+    };
+  }, []);
+
   useFrame((state, delta) => {
     const s = sim.current;
     const g = root.current;
@@ -61,7 +76,7 @@ export function Car() {
     if (input.reset) {
       input.reset = false;
       Object.assign(s, { x: START.x, z: START.z, y: 0, vy: 0, yaw: START.yaw, speed: 0, vx: 0, vz: 0, camYaw: START.yaw });
-      resetCones();
+      gameStore.resetProps();
     }
 
     const frozen = input.frozen;
@@ -173,22 +188,7 @@ export function Car() {
       }
     }
 
-    // ---- cones ----
     const carSpeed = Math.hypot(s.vx, s.vz);
-    for (const c of cones) {
-      const d = Math.hypot(c.x - s.x, c.z - s.z);
-      if (d < 1.5 && c.y < 1.2 && s.y < 1.2 && carSpeed > 1) {
-        const ux = (c.x - s.x) / (d || 1);
-        const uz = (c.z - s.z) / (d || 1);
-        c.vx = s.vx * 0.9 + ux * 4;
-        c.vz = s.vz * 0.9 + uz * 4;
-        c.vy = 3 + carSpeed * 0.35;
-        c.spin = (Math.random() - 0.5) * 18;
-        c.x += ux * 0.4;
-        c.z += uz * 0.4;
-        sfx.bonk();
-      }
-    }
 
     // ---- coins (3D distance so floating ones need a jump) ----
     COINS.forEach((c, i) => {
@@ -231,9 +231,10 @@ export function Car() {
     }
 
     // ---- visuals ----
-    g.position.set(s.x, s.y, s.z);
-    g.rotation.y = s.yaw;
-    playerPos.copy(g.position);
+    // drive the physics body so it shoves crates, pins and dominoes
+    rb.current?.setNextKinematicTranslation({ x: s.x, y: s.y, z: s.z });
+    rb.current?.setNextKinematicRotation(quat.setFromEuler(euler.set(0, s.yaw, 0)));
+    playerPos.set(s.x, s.y, s.z);
     if (body.current) {
       const accel = s.grounded ? throttle * 0.04 : 0;
       const airPitch = s.grounded ? 0 : THREE.MathUtils.clamp(-s.vy * 0.03, -0.4, 0.4);
@@ -255,24 +256,24 @@ export function Car() {
     }
     if (hud.speed) hud.speed.textContent = String(Math.round(Math.abs(s.speed) * 7));
 
-    // ---- chase camera ----
-    s.camYaw = s.camYaw + Math.atan2(Math.sin(s.yaw - s.camYaw), Math.cos(s.yaw - s.camYaw)) * (1 - Math.exp(-3 * dtAll));
-    const back = 9 + Math.max(s.speed, 0) * 0.12;
+    // ---- three-quarter follow camera (doesn't rotate with the car) ----
     const cam = state.camera as THREE.PerspectiveCamera;
-    const tx = s.x - Math.sin(s.camYaw) * back;
-    const tz = s.z - Math.cos(s.camYaw) * back;
-    const ty = s.y * 0.6 + 4.6;
-    cam.position.x = THREE.MathUtils.damp(cam.position.x, tx, 5, dtAll);
-    cam.position.y = THREE.MathUtils.damp(cam.position.y, ty, 4, dtAll);
-    cam.position.z = THREE.MathUtils.damp(cam.position.z, tz, 5, dtAll);
+    const zoom = 1 + Math.min(Math.abs(s.speed) / BOOST, 1) * 0.18;
+    // look slightly ahead of the car in its direction of travel
+    const ahead = THREE.MathUtils.clamp(s.speed / MAX, -1, 1) * 2.5;
+    const lx = s.x + Math.sin(s.yaw) * ahead;
+    const lz = s.z + Math.cos(s.yaw) * ahead;
+    cam.position.x = THREE.MathUtils.damp(cam.position.x, lx + 0, 4, dtAll);
+    cam.position.y = THREE.MathUtils.damp(cam.position.y, 13.5 * zoom + s.y * 0.5, 4, dtAll);
+    cam.position.z = THREE.MathUtils.damp(cam.position.z, lz + 12.5 * zoom, 4, dtAll);
     if (s.shake > 0) {
       cam.position.x += (Math.random() - 0.5) * s.shake * 0.6;
       cam.position.y += (Math.random() - 0.5) * s.shake * 0.6;
       s.shake = Math.max(0, s.shake - dtAll * 2.5);
     }
-    look.set(s.x + Math.sin(s.yaw) * 4, s.y * 0.8 + 1, s.z + Math.cos(s.yaw) * 4);
+    look.set(cam.position.x, s.y * 0.5 + 0.6, cam.position.z - 12.5 * zoom);
     cam.lookAt(look);
-    s.fov = THREE.MathUtils.damp(s.fov, 55 + Math.max(s.speed, 0) * 0.55 + (boost ? 6 : 0), 3, dtAll);
+    s.fov = THREE.MathUtils.damp(s.fov, 45 + (boost ? 4 : 0), 3, dtAll);
     if (Math.abs(cam.fov - s.fov) > 0.05) {
       cam.fov = s.fov;
       cam.updateProjectionMatrix();
@@ -280,67 +281,92 @@ export function Car() {
   });
 
   const wheelPos: [number, number, number][] = [
-    [-0.85, 0.42, 1.15],
-    [0.85, 0.42, 1.15],
-    [-0.85, 0.42, -1.15],
-    [0.85, 0.42, -1.15],
+    [-0.9, 0.44, 1.2],
+    [0.9, 0.44, 1.2],
+    [-0.9, 0.44, -1.2],
+    [0.9, 0.44, -1.2],
   ];
+  const trim = '#11141c';
 
   return (
-    <group ref={root} position={[START.x, 0, START.z]} rotation-y={START.yaw}>
+    <RigidBody
+      ref={rb}
+      type="kinematicPosition"
+      colliders={false}
+      position={[START.x, 0, START.z]}
+      rotation={[0, START.yaw, 0]}
+      onCollisionEnter={({ other }) => {
+        // bump sound + a little drag when we hit something loose
+        if (!other.rigidBody?.isDynamic()) return;
+        const now = performance.now();
+        if (now - lastBonk.current > 90) {
+          lastBonk.current = now;
+          sfx.bonk();
+        }
+        sim.current.speed *= 0.93;
+      }}
+    >
+      <CuboidCollider args={[0.95, 0.45, 2]} position={[0, 0.8, 0]} />
+    <group ref={root}>
       <group ref={body}>
-        {/* chassis */}
-        <mesh position={[0, 0.72, 0]} castShadow>
-          <boxGeometry args={[1.7, 0.5, 3.2]} />
-          <meshStandardMaterial color={paint} roughness={0.35} metalness={0.25} />
+        {/* glossy body */}
+        <RoundedBox args={[1.86, 0.62, 3.9]} radius={0.24} smoothness={5} position={[0, 0.78, 0]} castShadow>
+          <meshPhysicalMaterial color={paint} metalness={0.45} roughness={0.22} clearcoat={1} clearcoatRoughness={0.04} envMapIntensity={1.4} />
+        </RoundedBox>
+        {/* cabin: glass greenhouse with a painted roof */}
+        <RoundedBox args={[1.56, 0.58, 2.0]} radius={0.22} smoothness={5} position={[0, 1.3, -0.3]} castShadow>
+          <meshPhysicalMaterial color="#0c1a2e" metalness={0.2} roughness={0.04} clearcoat={1} envMapIntensity={2} />
+        </RoundedBox>
+        <RoundedBox args={[1.5, 0.1, 1.6]} radius={0.05} position={[0, 1.6, -0.4]}>
+          <meshPhysicalMaterial color={paint} metalness={0.45} roughness={0.22} clearcoat={1} />
+        </RoundedBox>
+        {/* white racing stripes */}
+        {[-0.2, 0.2].map((x) => (
+          <mesh key={x} position={[x, 1.095, 1.05]}>
+            <boxGeometry args={[0.14, 0.01, 1.6]} />
+            <meshStandardMaterial color="#f5f7fb" />
+          </mesh>
+        ))}
+        {/* bumpers */}
+        <RoundedBox args={[1.9, 0.26, 0.3]} radius={0.1} position={[0, 0.5, 1.92]}>
+          <meshStandardMaterial color={trim} roughness={0.5} />
+        </RoundedBox>
+        <RoundedBox args={[1.9, 0.26, 0.3]} radius={0.1} position={[0, 0.5, -1.92]}>
+          <meshStandardMaterial color={trim} roughness={0.5} />
+        </RoundedBox>
+        {/* grille */}
+        <mesh position={[0, 0.72, 1.96]}>
+          <boxGeometry args={[0.8, 0.16, 0.02]} />
+          <meshStandardMaterial color={trim} />
         </mesh>
-        {/* rounded nose and tail */}
-        <mesh position={[0, 0.72, 1.6]} rotation-z={Math.PI / 2} castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 1.7, 16]} />
-          <meshStandardMaterial color={paint} roughness={0.35} metalness={0.25} />
-        </mesh>
-        <mesh position={[0, 0.72, -1.6]} rotation-z={Math.PI / 2} castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 1.7, 16]} />
-          <meshStandardMaterial color={paint} roughness={0.35} metalness={0.25} />
-        </mesh>
-        {/* cabin with dark glass */}
-        <mesh position={[0, 1.22, -0.25]} castShadow>
-          <boxGeometry args={[1.42, 0.55, 1.7]} />
-          <meshStandardMaterial color="#111520" roughness={0.1} metalness={0.7} />
-        </mesh>
-        <mesh position={[0, 1.52, -0.25]}>
-          <boxGeometry args={[1.46, 0.06, 1.74]} />
-          <meshStandardMaterial color={paint} roughness={0.35} />
-        </mesh>
-        {/* racing stripe */}
-        <mesh position={[0, 0.975, 0.9]}>
-          <boxGeometry args={[0.36, 0.02, 1.4]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.3} />
-        </mesh>
+        {/* mirrors */}
+        {[-1, 1].map((side) => (
+          <RoundedBox key={side} args={[0.22, 0.14, 0.24]} radius={0.05} position={[side * 0.98, 1.22, 0.55]}>
+            <meshPhysicalMaterial color={paint} clearcoat={1} roughness={0.25} />
+          </RoundedBox>
+        ))}
         {/* spoiler */}
-        <mesh position={[0, 1.15, -1.55]} castShadow>
-          <boxGeometry args={[1.6, 0.07, 0.35]} />
-          <meshStandardMaterial color="#14161d" />
-        </mesh>
+        <RoundedBox args={[1.7, 0.07, 0.4]} radius={0.03} position={[0, 1.3, -1.78]} castShadow>
+          <meshStandardMaterial color={trim} />
+        </RoundedBox>
         {[-0.6, 0.6].map((x) => (
-          <mesh key={x} position={[x, 1.02, -1.55]}>
-            <boxGeometry args={[0.07, 0.25, 0.12]} />
-            <meshStandardMaterial color="#14161d" />
+          <mesh key={x} position={[x, 1.17, -1.74]}>
+            <boxGeometry args={[0.07, 0.22, 0.12]} />
+            <meshStandardMaterial color={trim} />
           </mesh>
         ))}
         {/* headlights */}
-        {[-0.55, 0.55].map((x) => (
-          <mesh key={x} position={[x, 0.8, 1.83]}>
-            <boxGeometry args={[0.38, 0.14, 0.05]} />
-            <meshStandardMaterial color="#fffbe6" emissive="#fff3c4" emissiveIntensity={3} />
-          </mesh>
+        {[-0.62, 0.62].map((x) => (
+          <RoundedBox key={x} args={[0.42, 0.14, 0.06]} radius={0.04} position={[x, 0.86, 1.94]}>
+            <meshStandardMaterial color="#ffffff" emissive="#fff6dc" emissiveIntensity={2.2} />
+          </RoundedBox>
         ))}
         {/* brake lights */}
-        <mesh position={[0, 0.82, -1.84]}>
-          <boxGeometry args={[1.3, 0.1, 0.04]} />
+        <mesh position={[0, 0.88, -1.955]}>
+          <boxGeometry args={[1.4, 0.1, 0.03]} />
           <meshStandardMaterial ref={brakeMat} color="#ff2a3d" emissive="#ff2a3d" emissiveIntensity={0.8} />
         </mesh>
-        <spotLight ref={spot} position={[0, 0.9, 1.7]} angle={0.5} penumbra={0.6} intensity={40} distance={22} color="#fff1cc" />
+        <spotLight ref={spot} position={[0, 0.9, 1.9]} angle={0.5} penumbra={0.6} intensity={12} distance={18} color="#fff1cc" />
         <object3D ref={spotTarget} position={[0, 0, 8]} />
       </group>
 
@@ -353,12 +379,16 @@ export function Car() {
             }}
           >
             <mesh rotation-z={Math.PI / 2} castShadow>
-              <cylinderGeometry args={[0.42, 0.42, 0.32, 20]} />
-              <meshStandardMaterial color="#15161b" roughness={0.9} />
+              <cylinderGeometry args={[0.44, 0.44, 0.34, 28]} />
+              <meshStandardMaterial color="#16181e" roughness={0.85} />
             </mesh>
             <mesh rotation-z={Math.PI / 2}>
-              <cylinderGeometry args={[0.22, 0.22, 0.34, 6]} />
-              <meshStandardMaterial color="#c9ccd6" metalness={0.8} roughness={0.3} />
+              <cylinderGeometry args={[0.27, 0.27, 0.36, 10]} />
+              <meshPhysicalMaterial color="#e6e9f0" metalness={1} roughness={0.15} clearcoat={1} />
+            </mesh>
+            <mesh rotation-z={Math.PI / 2}>
+              <cylinderGeometry args={[0.08, 0.08, 0.38, 8]} />
+              <meshStandardMaterial color={paint} />
             </mesh>
           </group>
         );
@@ -378,12 +408,7 @@ export function Car() {
           </group>
         );
       })}
-
-      {/* soft glow under the car so it's easy to spot */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, 0]}>
-        <planeGeometry args={[2.6, 4.2]} />
-        <meshBasicMaterial color={paint} transparent opacity={0.12} depthWrite={false} />
-      </mesh>
     </group>
+    </RigidBody>
   );
 }

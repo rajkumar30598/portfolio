@@ -8,9 +8,11 @@ export interface GameState {
   collected: number[];
   lastCoin: { label: string; at: number } | null;
   won: boolean;
+  /** bumped to rebuild all physics props (reset) */
+  resetKey: number;
 }
 
-const initial: GameState = { near: null, open: null, collected: [], lastCoin: null, won: false };
+const initial: GameState = { near: null, open: null, collected: [], lastCoin: null, won: false, resetKey: 0 };
 let state: GameState = initial;
 const listeners = new Set<() => void>();
 
@@ -36,6 +38,9 @@ export const gameStore = {
     const collected = [...state.collected, index];
     set({ collected, lastCoin: { label: COINS[index].label, at: performance.now() }, won: collected.length === COINS.length });
     return true;
+  },
+  resetProps() {
+    set({ resetKey: state.resetKey + 1 });
   },
   reset() {
     state = initial;

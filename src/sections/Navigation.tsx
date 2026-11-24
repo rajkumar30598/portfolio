@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Gamepad2, Menu, X } from 'lucide-react';
 import { startGame } from '@/lib/game';
 import { ScrambleText } from '@/components/motion';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { lockScroll, scrollToId } from '@/lib/motion';
 
 const navLinks = [
@@ -115,7 +114,6 @@ export function Navigation() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
-            <ThemeSwitcher />
             <button
               onClick={startGame}
               className="group flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-ink transition-transform duration-300 hover:scale-105"
@@ -163,23 +161,13 @@ export function Navigation() {
               {link.label}
             </a>
           ))}
-          <div
-            className="mt-10 flex items-center gap-4 transition-all duration-500"
-            style={{
-              transitionDelay: isMobileMenuOpen ? '550ms' : '0ms',
-              opacity: isMobileMenuOpen ? 1 : 0,
-            }}
-          >
-            <span className="text-xs uppercase tracking-[0.3em] text-white/40">Theme</span>
-            <ThemeSwitcher size="lg" />
-          </div>
           <button
             tabIndex={isMobileMenuOpen ? 0 : -1}
             onClick={() => {
               setIsMobileMenuOpen(false);
               startGame();
             }}
-            className="mt-6 flex w-fit items-center gap-3 rounded-full bg-brand px-6 py-4 font-medium text-ink transition-all duration-500"
+            className="mt-10 flex w-fit items-center gap-3 rounded-full bg-brand px-6 py-4 font-medium text-ink transition-all duration-500"
             style={{ transitionDelay: isMobileMenuOpen ? '600ms' : '0ms', opacity: isMobileMenuOpen ? 1 : 0 }}
           >
             <Gamepad2 size={20} /> Play as a game

@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import { Physics } from '@react-three/rapier';
 import { ArrowUpRight, Coins, Github, Linkedin, Mail, Phone, Volume2, VolumeX, X } from 'lucide-react';
 import { EMAIL, GITHUB, LINKEDIN, PHONE, experiences, projects } from '@/data/portfolio';
 import { bindKeyboard, input, setStick } from './input';
@@ -390,11 +391,13 @@ export default function Game({ onExit }: { onExit: () => void }) {
   }, [started]);
 
   return (
-    <div className="fixed inset-0 z-[150] bg-[#070a12] text-white" role="application" aria-label="Portfolio game">
-      <Canvas shadows camera={{ position: [0, 30, 40], fov: 55 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
+    <div className="fixed inset-0 z-[150] bg-[#cfe3f5] text-white" role="application" aria-label="Portfolio game">
+      <Canvas shadows="soft" camera={{ position: [0, 30, 40], fov: 45, far: 1200 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
         <Suspense fallback={<Loading />}>
-          <World />
-          <Car />
+          <Physics gravity={[0, -25, 0]}>
+            <World />
+            <Car />
+          </Physics>
         </Suspense>
       </Canvas>
 

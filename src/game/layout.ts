@@ -18,9 +18,9 @@ export interface Station {
 export const STATIONS: Station[] = [
   { id: 'about', at: [0, -17.5], radius: 2.8, prompt: 'Enter the house' },
   { id: 'experience', at: [15.5, -7], radius: 2.8, prompt: 'Visit the tower' },
-  { id: 'project-0', at: [-18, -8], radius: 2, prompt: 'Play Rookwise' },
-  { id: 'project-1', at: [-18, -3], radius: 2, prompt: 'Play AdFree Tube' },
-  { id: 'project-2', at: [-18, 2], radius: 2, prompt: 'Play PDF Toolkit' },
+  { id: 'project-0', at: [-18.5, -8.5], radius: 2.6, prompt: 'Open Rookwise' },
+  { id: 'project-1', at: [-18.5, -3], radius: 2.6, prompt: 'Open AdFree Tube' },
+  { id: 'project-2', at: [-18.5, 2.5], radius: 2.6, prompt: 'Open PDF Toolkit' },
   { id: 'archive', at: [-12, 12.5], radius: 2.6, prompt: 'Browse the archive' },
   { id: 'contact', at: [12.5, 12.5], radius: 2.6, prompt: 'Check the mailbox' },
 ];
@@ -29,8 +29,9 @@ export const STATIONS: Station[] = [
 export const PLACES = {
   house: [0, -23] as [number, number],
   tower: [21, -9] as [number, number],
-  arcadeX: -22,
-  cabinetsZ: [-8, -3, 2],
+  /** project billboards stand in a row on the west side, facing the road */
+  boardsX: -23.5,
+  boardsZ: [-8.5, -3, 2.5],
   kiosk: [-15.5, 16] as [number, number],
   mailbox: [16, 16] as [number, number],
 };
@@ -84,18 +85,29 @@ export const COINS: { label: string; at: [number, number]; y?: number }[] = [
   { label: 'Expo', at: [6.5, 11.3] },
 ];
 
-/** Traffic cones: a slalom in front of the start and a bowling triangle. */
-export const CONES: [number, number][] = [
-  ...[-6, -4, -2, 0, 2, 4, 6].map((x, i) => [x, -5 + (i % 2) * 1.6] as [number, number]),
-  ...[
-    [0, 0],
-    [-0.7, 1.1],
-    [0.7, 1.1],
-    [-1.4, 2.2],
-    [0, 2.2],
-    [1.4, 2.2],
-  ].map(([x, z]) => [x - 6, z - 0.5] as [number, number]),
-];
+/* ---------- physics playground (all dynamic rigid bodies) ---------- */
+
+/** Traffic cone slalom straight ahead of the start. */
+export const CONES: [number, number][] = [-6, -4, -2, 0, 2, 4, 6].map((x, i) => [x, -5 + (i % 2) * 1.6] as [number, number]);
+
+/** Skill crates stacked into a pyramid (bottom row first). */
+export const CRATE_SIZE = 1.15;
+export const CRATE_TOWER = { x: 4.5, z: -7.8, rows: [4, 3, 2, 1] };
+export const CRATE_LABELS = ['Angular', 'React', 'TypeScript', 'RxJS', 'Next.js', 'Redux', 'Expo', 'Firebase', 'Tailwind', 'JS'];
+
+/** Ten bowling pins in a triangle, pointing at the start. */
+export const BOWLING = { x: -6.5, z: -1 };
+export const PINS: [number, number][] = [0, 1, 2, 3].flatMap((row) =>
+  Array.from({ length: row + 1 }, (_, i) => [BOWLING.x + (i - row / 2) * 0.75, BOWLING.z - row * 0.7] as [number, number])
+);
+
+/** A curved line of dominoes: knock the first one. */
+export const DOMINOES: { x: number; z: number; rot: number }[] = Array.from({ length: 22 }, (_, i) => {
+  const t = i / 21;
+  const a = -0.2 + t * 1.35;
+  const r = 7;
+  return { x: -Math.cos(a) * r - 1, z: Math.sin(a) * r + 2.5, rot: -a + Math.PI / 2 };
+});
 
 export const START = { x: 0, z: 1.5, yaw: Math.PI };
 
@@ -113,7 +125,7 @@ function rng(seed: number) {
 const keepClear: [number, number, number][] = [
   [PLACES.house[0], PLACES.house[1], 7],
   [PLACES.tower[0], PLACES.tower[1], 6],
-  [PLACES.arcadeX, -3, 8],
+  [PLACES.boardsX, -3, 8],
   [PLACES.kiosk[0], PLACES.kiosk[1], 5],
   [PLACES.mailbox[0], PLACES.mailbox[1], 5],
   [0, 18, 7],
@@ -143,7 +155,7 @@ export const TREES: { x: number; z: number; s: number; kind: number }[] = (() =>
 export const COLLIDERS: Circle[] = [
   { x: PLACES.house[0], z: PLACES.house[1], r: 4.2 },
   { x: PLACES.tower[0], z: PLACES.tower[1], r: 3.1 },
-  ...PLACES.cabinetsZ.map((z) => ({ x: PLACES.arcadeX, z, r: 1.3 })),
+  ...PLACES.boardsZ.flatMap((z) => [-1.9, 1.9].map((o) => ({ x: PLACES.boardsX, z: z + o, r: 0.3 }))),
   { x: PLACES.kiosk[0], z: PLACES.kiosk[1], r: 1.5 },
   { x: PLACES.mailbox[0], z: PLACES.mailbox[1], r: 0.7 },
   ...TREES.map((t) => ({ x: t.x, z: t.z, r: 0.6 * t.s })),
