@@ -118,7 +118,7 @@ function PanelBody({ id }: { id: StationId }) {
             href={p.liveUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-medium text-ink transition-transform hover:scale-105"
+            className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-medium text-white transition-transform hover:scale-105"
           >
             {p.liveLabel ?? 'Visit'} <ArrowUpRight size={18} />
           </a>
@@ -172,7 +172,7 @@ function PanelBody({ id }: { id: StationId }) {
             rel="noopener noreferrer"
             className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition-colors hover:border-brand/50"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/15 text-brand transition-colors group-hover:bg-brand group-hover:text-ink">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/15 text-brand transition-colors group-hover:bg-brand group-hover:text-white">
               <Icon size={20} />
             </span>
             <span className="truncate text-white">{label}</span>
@@ -232,7 +232,7 @@ function Prompt() {
       }}
       className="absolute bottom-32 left-1/2 z-30 flex -translate-x-1/2 animate-bounce items-center gap-3 rounded-full border border-brand/40 bg-black/60 px-5 py-3 text-white backdrop-blur-md sm:bottom-16"
     >
-      <kbd className="hidden h-7 w-7 items-center justify-center rounded-md bg-brand font-mono text-sm font-semibold text-ink sm:flex">E</kbd>
+      <kbd className="hidden h-7 w-7 items-center justify-center rounded-md bg-brand font-mono text-sm font-semibold text-white sm:flex">E</kbd>
       {st.prompt}
     </button>
   );
@@ -346,7 +346,7 @@ function Intro({ onStart }: { onStart: () => void }) {
         <button
           autoFocus
           onClick={onStart}
-          className="w-full rounded-2xl bg-brand py-4 font-medium text-ink transition-transform hover:scale-[1.02]"
+          className="w-full rounded-2xl bg-brand py-4 font-medium text-white transition-transform hover:scale-[1.02]"
         >
           Start driving
         </button>

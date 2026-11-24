@@ -90,7 +90,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
           </span>
           {project.liveUrl && (
-            <span className="absolute right-5 top-5 z-20 flex h-11 w-11 -translate-y-2 items-center justify-center rounded-full bg-brand text-ink opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:rotate-45 group-hover:opacity-100">
+            <span className="absolute right-5 top-5 z-20 flex h-11 w-11 -translate-y-2 items-center justify-center rounded-full bg-brand text-white opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:rotate-45 group-hover:opacity-100">
               <ArrowUpRight size={20} />
             </span>
           )}
@@ -259,7 +259,7 @@ export function Projects() {
                 href="https://github.com/rajkumar30598"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-full border border-white/15 bg-white/[0.03] text-white backdrop-blur-md transition-all duration-500 hover:scale-105 hover:border-brand hover:bg-brand hover:text-ink"
+                className="group flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-full border border-white/15 bg-white/[0.03] text-white backdrop-blur-md transition-all duration-500 hover:scale-105 hover:border-brand hover:bg-brand hover:text-white"
               >
                 <Github size={30} />
                 <span className="font-display text-2xl">More on GitHub</span>

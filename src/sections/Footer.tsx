@@ -138,7 +138,7 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-brand hover:text-ink hover:border-brand hover:scale-110 hover:rotate-6 transition-all duration-300"
+                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-brand hover:text-white hover:border-brand hover:scale-110 hover:rotate-6 transition-all duration-300"
                   aria-label={social.label}
                 >
                   <social.icon size={18} />

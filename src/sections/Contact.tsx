@@ -96,7 +96,7 @@ export function Contact() {
               {contacts.map(({ icon: Icon, label, value, href }) => {
                 const inner = (
                   <>
-                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-brand/20 bg-brand/10 text-brand transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:bg-brand group-hover:text-ink">
+                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-brand/20 bg-brand/10 text-brand transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:bg-brand group-hover:text-white">
                       <Icon size={22} />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -138,7 +138,7 @@ export function Contact() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-all duration-300 hover:border-brand hover:bg-brand hover:text-ink"
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-all duration-300 hover:border-brand hover:bg-brand hover:text-white"
                   >
                     <Icon size={20} />
                   </a>
@@ -169,13 +169,13 @@ export function Contact() {
               </div>
               <button
                 type="submit"
-                className="group relative w-full overflow-hidden rounded-2xl bg-brand py-5 font-medium text-ink"
+                className="group relative w-full overflow-hidden rounded-2xl bg-brand py-5 font-medium text-white"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   Send message
                   <Send size={18} className="transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:rotate-12" />
                 </span>
-                <span className="absolute inset-0 -translate-x-full bg-white transition-transform duration-500 ease-out group-hover:translate-x-0" />
+                <span className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 ease-out group-hover:translate-x-0" />
               </button>
             </form>
           </div>

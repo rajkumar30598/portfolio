@@ -120,13 +120,13 @@ export function Hero({ ready }: { ready: boolean }) {
               <Magnetic>
                 <button
                   onClick={() => scrollToId('#projects')}
-                  className="group relative overflow-hidden rounded-full bg-brand px-8 py-4 font-medium text-ink"
+                  className="group relative overflow-hidden rounded-full bg-brand px-8 py-4 font-medium text-white"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     View my work
                     <ArrowDownRight size={18} className="transition-transform duration-300 group-hover:rotate-[-45deg]" />
                   </span>
-                  <span className="absolute inset-0 translate-y-full rounded-full bg-white transition-transform duration-500 ease-out group-hover:translate-y-0" />
+                  <span className="absolute inset-0 translate-y-full rounded-full bg-white/20 transition-transform duration-500 ease-out group-hover:translate-y-0" />
                 </button>
               </Magnetic>
               <Magnetic>
@@ -140,7 +140,7 @@ export function Hero({ ready }: { ready: boolean }) {
               <Magnetic>
                 <button
                   onClick={startGame}
-                  className="group flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-6 py-4 text-brand backdrop-blur-md transition-colors duration-300 hover:bg-brand hover:text-ink"
+                  className="group flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-6 py-4 text-brand backdrop-blur-md transition-colors duration-300 hover:bg-brand hover:text-white"
                 >
                   <Gamepad2 size={18} className="transition-transform duration-300 group-hover:rotate-[-12deg]" />
                   Play as a game
@@ -155,7 +155,7 @@ export function Hero({ ready }: { ready: boolean }) {
                     target={href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-brand hover:bg-brand hover:text-ink"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-colors duration-300 hover:border-brand hover:bg-brand hover:text-white"
                   >
                     <Icon size={18} />
                   </a>

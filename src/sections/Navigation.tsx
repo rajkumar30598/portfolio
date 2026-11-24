@@ -77,7 +77,7 @@ export function Navigation() {
             }}
             className="group flex items-center gap-2 font-display text-2xl text-white"
           >
-            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand font-display text-xl text-ink transition-transform duration-500 group-hover:rotate-[-8deg]">
+            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand font-display text-xl text-white transition-transform duration-500 group-hover:rotate-[-8deg]">
               RV
             </span>
             <span className="hidden sm:inline">
@@ -109,7 +109,7 @@ export function Navigation() {
                 }}
                 aria-current={active === link.href ? 'true' : undefined}
                 className={`relative z-10 rounded-full px-4 py-2 text-sm transition-colors duration-300 ${
-                  active === link.href ? 'text-ink' : 'text-white/75 hover:text-white'
+                  active === link.href ? 'text-white' : 'text-white/75 hover:text-white'
                 }`}
               >
                 <ScrambleText text={link.label} />
@@ -120,7 +120,7 @@ export function Navigation() {
           <div className="hidden items-center gap-3 md:flex">
             <button
               onClick={startGame}
-              className="group flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-ink transition-transform duration-300 hover:scale-105"
+              className="group flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-white transition-transform duration-300 hover:scale-105"
             >
               <Gamepad2 size={17} className="transition-transform duration-300 group-hover:rotate-[-12deg]" />
               Play
@@ -171,7 +171,7 @@ export function Navigation() {
               setIsMobileMenuOpen(false);
               startGame();
             }}
-            className="mt-10 flex w-fit items-center gap-3 rounded-full bg-brand px-6 py-4 font-medium text-ink transition-all duration-500"
+            className="mt-10 flex w-fit items-center gap-3 rounded-full bg-brand px-6 py-4 font-medium text-white transition-all duration-500"
             style={{ transitionDelay: isMobileMenuOpen ? '600ms' : '0ms', opacity: isMobileMenuOpen ? 1 : 0 }}
           >
             <Gamepad2 size={20} /> Play as a game
