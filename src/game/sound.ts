@@ -35,4 +35,7 @@ export const sfx = {
   open: () => tone([523, 659, 784], 0.05, 'triangle'),
   close: () => tone([659, 523], 0.05, 'triangle', 0.04),
   win: () => tone([523, 659, 784, 1047, 784, 1047], 0.09, 'square', 0.05),
+  bonk: () => tone([180, 120], 0.05, 'sine', 0.09),
+  crash: () => tone([90, 60], 0.08, 'sawtooth', 0.05),
+  land: () => tone([110], 0.09, 'sine', 0.08),
 };

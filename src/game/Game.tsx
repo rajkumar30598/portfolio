@@ -5,7 +5,8 @@ import { ArrowUpRight, Coins, Github, Linkedin, Mail, Phone, Volume2, VolumeX, X
 import { EMAIL, GITHUB, LINKEDIN, PHONE, experiences, projects } from '@/data/portfolio';
 import { bindKeyboard, input, setStick } from './input';
 import { COINS, STATIONS, type StationId } from './layout';
-import { Player } from './Player';
+import { Car } from './Car';
+import { hud } from './runtime';
 import { World } from './World';
 import { gameStore, useGame } from './store';
 import { isMuted, setMuted, sfx } from './sound';
@@ -312,18 +313,24 @@ function Intro({ onStart }: { onStart: () => void }) {
         <p className="mb-2 text-xs uppercase tracking-[0.3em] text-brand">Play mode</p>
         <h2 className="mb-3 font-display text-6xl leading-none text-white">Rajkumar's Island</h2>
         <p className="mb-6 text-white/65">
-          Explore the island to discover my work. Walk up to buildings to open them, and collect all {COINS.length} skill coins.
+          Drive around the island to discover my work. Park on a glowing pad to open a building, hit the ramps, knock over cones and collect all {COINS.length} skill coins.
         </p>
         <div className="mb-7 grid grid-cols-2 gap-3 text-left text-sm">
           {(touch
             ? [
-                ['Joystick', 'move (push far to run)'],
+                ['Joystick', 'drive & steer'],
+                ['Push far up', 'boost'],
                 ['Tap prompt', 'open'],
+                ['Reset', 'button top-right'],
               ]
             : [
-                ['WASD / ← ↑ → ↓', 'move'],
-                ['Shift', 'run'],
-                ['E / Enter', 'open'],
+                ['W / ↑', 'accelerate'],
+                ['S / ↓', 'brake / reverse'],
+                ['A D / ← →', 'steer'],
+                ['Shift', 'boost'],
+                ['Space', 'handbrake drift'],
+                ['E / Enter', 'open building'],
+                ['R', 'reset car'],
                 ['Esc', 'close / exit'],
               ]
           ).map(([k, v]) => (
@@ -338,7 +345,7 @@ function Intro({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           className="w-full rounded-2xl bg-brand py-4 font-medium text-ink transition-transform hover:scale-[1.02]"
         >
-          Start exploring
+          Start driving
         </button>
       </div>
     </div>
@@ -384,10 +391,10 @@ export default function Game({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[150] bg-[#070a12] text-white" role="application" aria-label="Portfolio game">
-      <Canvas shadows camera={{ position: [0, 26, 34], fov: 50 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
+      <Canvas shadows camera={{ position: [0, 30, 40], fov: 55 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
         <Suspense fallback={<Loading />}>
           <World />
-          <Player />
+          <Car />
         </Suspense>
       </Canvas>
 
@@ -400,6 +407,14 @@ export default function Game({ onExit }: { onExit: () => void }) {
           </p>
         </div>
         <div className="pointer-events-auto flex gap-2">
+          <button
+            onClick={() => {
+              input.reset = true;
+            }}
+            className="flex h-11 items-center rounded-full border border-white/15 bg-black/45 px-4 text-sm backdrop-blur-md hover:bg-white/10"
+          >
+            Reset car
+          </button>
           <button
             onClick={() => {
               setMuted(!muted);
@@ -425,9 +440,20 @@ export default function Game({ onExit }: { onExit: () => void }) {
           <Prompt />
           <CoinToast />
           {touch && <Joystick />}
+          <div className="pointer-events-none absolute bottom-6 right-6 z-30 rounded-2xl border border-white/10 bg-black/45 px-5 py-3 text-right backdrop-blur-md">
+            <p
+              ref={(el) => {
+                hud.speed = el;
+              }}
+              className="font-display text-5xl leading-none text-brand tabular-nums"
+            >
+              0
+            </p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">km/h</p>
+          </div>
           {!touch && (
             <p className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2 font-mono text-xs text-white/40">
-              WASD to move · Shift to run · E to open · Esc to exit
+              W/S drive · A/D steer · Shift boost · Space drift · E open · R reset · Esc exit
             </p>
           )}
         </>
