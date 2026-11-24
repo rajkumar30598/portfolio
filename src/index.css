@@ -265,8 +265,10 @@ html.lenis, html.lenis body { height: auto; }
 .animate-nudge { animation: nudge 1.4s ease-in-out infinite; }
 
 @media (pointer: fine) {
-  html.has-custom-cursor, html.has-custom-cursor * { cursor: none !important; }
+  html.has-custom-cursor:not(.game-open), html.has-custom-cursor:not(.game-open) * { cursor: none !important; }
 }
+/* the game uses the normal system cursor */
+html.game-open .custom-cursor { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .noise-overlay, .animate-scroll-line, .animate-nudge { animation: none; }

@@ -369,7 +369,9 @@ export default function Game({ onExit }: { onExit: () => void }) {
       } else onExit();
     });
     document.body.style.overflow = 'hidden';
+    document.documentElement.classList.add('game-open');
     return () => {
+      document.documentElement.classList.remove('game-open');
       unbind();
       input.frozen = false;
       document.body.style.overflow = '';

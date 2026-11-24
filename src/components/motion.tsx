@@ -70,13 +70,13 @@ export function Cursor() {
     <>
       <div
         ref={ring}
-        className="pointer-events-none fixed left-0 top-0 z-[100] flex h-10 w-10 items-center justify-center rounded-full border border-brand/60 opacity-0 mix-blend-difference"
+        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] flex h-10 w-10 items-center justify-center rounded-full border border-brand/60 opacity-0 mix-blend-difference"
       >
         <span ref={label} className="text-[5px] font-semibold uppercase tracking-widest text-brand" />
       </div>
       <div
         ref={dot}
-        className="pointer-events-none fixed left-0 top-0 z-[100] h-1.5 w-1.5 rounded-full bg-brand opacity-0"
+        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] h-1.5 w-1.5 rounded-full bg-brand opacity-0"
       />
     </>
   );
