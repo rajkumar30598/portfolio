@@ -201,6 +201,8 @@ function Panel() {
       <div
         role="dialog"
         aria-modal="true"
+        data-lenis-prevent
+        style={{ overscrollBehavior: 'contain' }}
         className="glass relative max-h-[85vh] w-full max-w-2xl !bg-ink/90 animate-[panel-in_0.35s_cubic-bezier(.2,.9,.3,1.2)] overflow-y-auto rounded-3xl p-6 sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
@@ -510,7 +512,7 @@ export default function Game({ onExit }: { onExit: () => void }) {
   useEffect(() => () => stopEngine(), []);
 
   return (
-    <div className="fixed inset-0 z-[150] bg-[#f1d8c0] text-white" role="application" aria-label="Portfolio game">
+    <div data-lenis-prevent className="fixed inset-0 z-[150] bg-[#f1d8c0] text-white" role="application" aria-label="Portfolio game">
       <Canvas shadows="soft" camera={{ position: [0, 75, 95], fov: 50, far: 600 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
         <Suspense fallback={<Loading />}>
           <Physics gravity={[0, -25, 0]}>
