@@ -1,5 +1,5 @@
 /**
- * The site's single colour theme: glossy blue.
+ * The site's single colour theme: near-black + warm cream with an electric-blue accent.
  * Colours are applied as CSS variables (rgb triplets) so Tailwind's `brand`
  * utilities and the three.js scenes read the same palette.
  */
@@ -17,10 +17,10 @@ export interface Theme {
 }
 
 export const THEME: Theme = {
-  brand: [84, 166, 255],
-  brand2: [111, 92, 255],
-  brand3: [120, 232, 255],
-  ink: [6, 10, 22],
+  brand: [47, 91, 255], // electric blue accent
+  brand2: [130, 150, 255],
+  brand3: [214, 224, 255], // cool white (particle highlights)
+  ink: [11, 11, 12], // near-black
 };
 
 const triplet = (c: Rgb) => c.join(' ');

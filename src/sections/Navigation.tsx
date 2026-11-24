@@ -1,181 +1,121 @@
-import { useEffect, useRef, useState } from 'react';
-import { Gamepad2, Menu, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, Gamepad2 } from 'lucide-react';
 import { startGame } from '@/lib/game';
-import { ScrambleText } from '@/components/motion';
 import { lockScroll, scrollToId } from '@/lib/motion';
+import { EMAIL } from '@/data/portfolio';
 
 const navLinks = [
-  { label: 'Home', href: '#home' },
+  { label: 'Work', href: '#projects' },
   { label: 'About', href: '#about' },
   { label: 'Experience', href: '#experience' },
-  { label: 'Projects', href: '#projects' },
   { label: 'Contact', href: '#contact' },
 ];
 
+/** Label rolls up and a copy rolls in from below on hover. */
+function NavLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="group relative overflow-hidden py-1 text-[15px] font-medium">
+      <span className="block transition-transform duration-500 ease-[cubic-bezier(.7,0,.2,1)] group-hover:-translate-y-full">{label}</span>
+      <span className="absolute inset-0 block translate-y-full transition-transform duration-500 ease-[cubic-bezier(.7,0,.2,1)] group-hover:translate-y-0">
+        {label}
+      </span>
+    </button>
+  );
+}
+
 export function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [active, setActive] = useState('#home');
-  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
-  const [pill, setPill] = useState({ left: 0, width: 0 });
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // highlight whichever section is in the middle of the screen
-  useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActive(`#${e.target.id}`);
-        });
-      },
-      { rootMargin: '-45% 0px -50% 0px' }
-    );
-    navLinks.forEach((l) => {
-      const el = document.querySelector(l.href);
-      if (el) io.observe(el);
-    });
-    return () => io.disconnect();
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    const el = linkRefs.current[active];
-    if (el) setPill({ left: el.offsetLeft, width: el.offsetWidth });
-  }, [active]);
+    lockScroll(open);
+  }, [open]);
 
-  useEffect(() => {
-    lockScroll(isMobileMenuOpen);
-  }, [isMobileMenuOpen]);
-
-  const scrollToSection = (href: string) => {
+  const go = (href: string) => {
     scrollToId(href);
-    setIsMobileMenuOpen(false);
+    setOpen(false);
   };
 
   return (
     <>
       <nav
-        className={`fixed left-0 right-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-500 ${
-          isScrolled ? 'border-b border-white/[0.06] bg-ink/60 backdrop-blur-2xl' : 'border-b border-transparent'
+        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow] duration-500 ${
+          scrolled && !open ? 'bg-ink/70 shadow-[0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl' : 'bg-transparent'
         }`}
       >
-        <div
-          className={`mx-auto flex max-w-7xl items-center justify-between px-6 transition-all duration-500 lg:px-10 ${
-            isScrolled ? 'h-16' : 'h-24'
-          }`}
-        >
-          <a
-            href="#home"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection('#home');
-            }}
-            className="group flex items-center gap-2 font-display text-2xl text-white"
-          >
-            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand font-display text-xl text-white transition-transform duration-500 group-hover:rotate-[-8deg]">
-              RV
-            </span>
-            <span className="hidden sm:inline">
-              Rajkumar<span className="text-brand">.</span>V
-            </span>
-          </a>
-
-          {/* Desktop: floating glass pill with a sliding active indicator */}
-          <div
-            className={`relative hidden items-center rounded-full border p-1.5 backdrop-blur-xl transition-colors duration-500 md:flex ${
-              isScrolled ? 'border-white/10 bg-ink/60' : 'border-white/5 bg-white/[0.03]'
-            }`}
-          >
-            <span
-              aria-hidden="true"
-              className="absolute bottom-1.5 top-1.5 rounded-full bg-brand transition-all duration-500 ease-[cubic-bezier(.7,0,.2,1)]"
-              style={{ left: pill.left, width: pill.width }}
-            />
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                ref={(el) => {
-                  linkRefs.current[link.href] = el;
-                }}
-                href={link.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection(link.href);
-                }}
-                aria-current={active === link.href ? 'true' : undefined}
-                className={`relative z-10 rounded-full px-4 py-2 text-sm transition-colors duration-300 ${
-                  active === link.href ? 'text-white' : 'text-white/75 hover:text-white'
-                }`}
-              >
-                <ScrambleText text={link.label} />
-              </a>
+        <div className={`mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-5 sm:px-8 lg:px-12 text-white`}>
+          <button onClick={() => go('#home')} className="font-display text-2xl font-bold tracking-tight">
+            RV<sup className="ml-0.5 text-xs font-medium">©</sup>
+          </button>
+          <div className="hidden items-center gap-10 md:flex">
+            {navLinks.map((l) => (
+              <NavLink key={l.label} label={l.label} onClick={() => go(l.href)} />
             ))}
           </div>
-
-          <div className="hidden items-center gap-3 md:flex">
-            <button
-              onClick={startGame}
-              className="group flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-white transition-transform duration-300 hover:scale-105"
-            >
-              <Gamepad2 size={17} className="transition-transform duration-300 group-hover:rotate-[-12deg]" />
-              Play
-            </button>
-          </div>
-
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="relative z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white backdrop-blur-md md:hidden"
+            onClick={() => setOpen(!open)}
+            className="text-[15px] font-medium md:hidden"
+            aria-expanded={open}
             aria-label="Toggle menu"
-            aria-expanded={isMobileMenuOpen}
           >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {open ? 'Close' : 'Menu'}
+          </button>
+          <button
+            onClick={startGame}
+            className="group hidden items-center gap-2 rounded-full bg-brand py-2.5 pl-4 pr-5 text-sm font-semibold text-white transition-colors duration-300 hover:bg-white hover:text-ink md:flex"
+          >
+            <Gamepad2 size={17} className="transition-transform duration-300 group-hover:rotate-[-12deg]" />
+            Play
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu: full-screen panel that wipes down */}
+      {/* mobile menu: full-screen blue panel */}
       <div
-        className={`fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl transition-[clip-path] duration-700 ease-[cubic-bezier(.7,0,.2,1)] md:hidden`}
-        style={{ clipPath: isMobileMenuOpen ? 'inset(0 0 0 0)' : 'inset(0 0 100% 0)' }}
-        aria-hidden={!isMobileMenuOpen}
+        className="fixed inset-0 z-40 bg-brand text-white transition-[clip-path] duration-700 ease-[cubic-bezier(.7,0,.2,1)] md:hidden"
+        style={{ clipPath: open ? 'inset(0 0 0 0)' : 'inset(0 0 100% 0)' }}
+        aria-hidden={!open}
       >
-        <div className="flex h-full flex-col justify-center gap-2 px-8">
-          {navLinks.map((link, index) => (
-            <a
-              key={link.label}
-              href={link.href}
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToSection(link.href);
+        <div className="flex h-full flex-col justify-between px-5 pb-10 pt-28">
+          <div className="space-y-1">
+            {[{ label: 'Home', href: '#home' }, ...navLinks].map((l, i) => (
+              <button
+                key={l.label}
+                tabIndex={open ? 0 : -1}
+                onClick={() => go(l.href)}
+                className="block font-display text-6xl font-bold transition-all duration-500"
+                style={{
+                  transitionDelay: open ? `${150 + i * 60}ms` : '0ms',
+                  opacity: open ? 1 : 0,
+                  transform: open ? 'none' : 'translateY(30px)',
+                }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-5">
+            <button
+              tabIndex={open ? 0 : -1}
+              onClick={() => {
+                setOpen(false);
+                startGame();
               }}
-              className="flex items-baseline gap-4 font-display text-5xl font-semibold text-white transition-all duration-500 hover:text-brand"
-              style={{
-                transitionDelay: isMobileMenuOpen ? `${150 + index * 70}ms` : '0ms',
-                opacity: isMobileMenuOpen ? 1 : 0,
-                transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(30px)',
-              }}
+              className="flex items-center gap-3 rounded-full bg-white px-6 py-4 font-semibold text-ink"
             >
-              <span className="font-mono text-xs text-brand">0{index + 1}</span>
-              {link.label}
+              <Gamepad2 size={20} /> Play as a game
+            </button>
+            <a href={`mailto:${EMAIL}`} tabIndex={open ? 0 : -1} className="flex items-center gap-2 text-lg font-medium">
+              {EMAIL} <ArrowUpRight size={18} />
             </a>
-          ))}
-          <button
-            tabIndex={isMobileMenuOpen ? 0 : -1}
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              startGame();
-            }}
-            className="mt-10 flex w-fit items-center gap-3 rounded-full bg-brand px-6 py-4 font-medium text-white transition-all duration-500"
-            style={{ transitionDelay: isMobileMenuOpen ? '600ms' : '0ms', opacity: isMobileMenuOpen ? 1 : 0 }}
-          >
-            <Gamepad2 size={20} /> Play as a game
-          </button>
+          </div>
         </div>
       </div>
     </>

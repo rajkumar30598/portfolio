@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -28,10 +28,10 @@
     --radius: 0.5rem;
 
     /* Theme tokens (rgb triplets), overwritten at runtime by src/lib/theme.ts */
-    --brand: 84 166 255;
-    --brand-2: 111 92 255;
-    --brand-3: 120 232 255;
-    --ink: 6 10 22;
+    --brand: 47 91 255;
+    --brand-2: 130 150 255;
+    --brand-3: 236 232 223;
+    --ink: 11 11 12;
 
     /* Custom colors */
     --color-bg: #161616;
@@ -71,8 +71,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Sora', 'Inter', sans-serif;
-    letter-spacing: -0.035em;
+    font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+    letter-spacing: -0.04em;
   }
 }
 
@@ -82,8 +82,19 @@
   }
 
   .font-display {
-    font-family: 'Sora', 'Inter', sans-serif;
-    letter-spacing: -0.04em;
+    font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+    letter-spacing: -0.045em;
+    font-optical-sizing: auto;
+  }
+
+  /* outlined display text */
+  .text-stroke {
+    color: transparent;
+    -webkit-text-stroke: 1.5px currentColor;
+  }
+  .text-stroke-brand {
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgb(var(--brand));
   }
 
   .font-body {
@@ -230,7 +241,7 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 
-::selection { background: rgb(var(--brand)); color: rgb(var(--ink)); }
+::selection { background: rgb(var(--brand)); color: #fff; }
 
 .glass {
   /* liquid glass: sheen across the top, cool tint, and a 1px gradient light edge
@@ -239,7 +250,7 @@ html.lenis, html.lenis body { height: auto; }
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 40%, rgba(255, 255, 255, 0) 65%) padding-box,
     linear-gradient(145deg, rgb(12 18 38 / 0.72), rgb(8 12 28 / 0.55)) padding-box,
-    linear-gradient(140deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.06) 32%, rgba(255, 255, 255, 0.03) 60%, rgb(var(--brand) / 0.55)) border-box;
+    linear-gradient(140deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05) 35%, rgba(255, 255, 255, 0.03) 65%, rgb(var(--brand) / 0.3)) border-box;
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
   box-shadow:
@@ -251,16 +262,9 @@ html.lenis, html.lenis body { height: auto; }
 /* Glossy fill for every solid brand surface (buttons, pills, logo, nav indicator):
    a specular highlight on the top half, darker base, and a soft blue glow. */
 [class~="bg-brand"] {
-  /* deeper blue than the accent so white text reads clearly */
-  background-color: #2470e6;
+  /* flat, confident accent surface */
+  background-color: rgb(var(--brand));
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 24, 80, 0.35);
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 46%, rgba(255, 255, 255, 0) 52%, rgba(0, 20, 80, 0.18) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -2px 6px rgba(0, 30, 120, 0.25),
-    0 10px 30px -10px rgb(var(--brand) / 0.75);
 }
 
 .noise-overlay {
@@ -336,26 +340,6 @@ html.game-open .custom-cursor { display: none; }
   to { opacity: 1; transform: none; }
 }
 
-/* light sweep across glossy buttons on hover */
-:is(button, a)[class~="bg-brand"] {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-:is(button, a)[class~="bg-brand"]::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.6) 50%, transparent 70%);
-  transform: translateX(-130%);
-  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-:is(button, a)[class~="bg-brand"]:hover::after {
-  transform: translateX(130%);
-}
-
 /* ---------- aurora background ---------- */
 .aurora {
   position: fixed;
@@ -366,8 +350,8 @@ html.game-open .custom-cursor { display: none; }
 .aurora span {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(90px);
-  opacity: 0.55;
+  filter: blur(100px);
+  opacity: 0.32;
   mix-blend-mode: screen;
   will-change: transform;
 }

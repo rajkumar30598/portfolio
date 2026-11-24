@@ -156,7 +156,7 @@ const fragmentShader = /* glsl */ `
     float d = length(gl_PointCoord - 0.5);
     float glow = smoothstep(0.5, 0.0, d);
     float core = smoothstep(0.18, 0.0, d);
-    gl_FragColor = vec4(vColor * (0.75 + core * 0.9), (glow * glow * 0.7 + core * 0.5) * vAlpha * uDim);
+    gl_FragColor = vec4(vColor * (0.8 + core * 0.8), (glow * glow * 0.65 + core * 0.5) * vAlpha * uDim);
   }`;
 
 function ParticleSculpture({ isMobile }: { isMobile: boolean }) {
@@ -271,9 +271,6 @@ export default function BackgroundScene() {
         <CameraRig />
         <PulseDecay />
       </Canvas>
-      {/* vignette + grain keep text readable over the scene */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgb(var(--ink)/0.25)_70%,rgb(var(--ink)/0.75)_100%)]" />
-      <div className="noise-overlay absolute inset-0" />
     </div>
   );
 }

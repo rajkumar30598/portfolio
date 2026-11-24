@@ -8,11 +8,6 @@ gsap.registerPlugin(ScrollTrigger);
 const isFinePointer = () =>
   typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
 
-const brandRgba = (a: number) => {
-  const v = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim().split(/\s+/).join(',');
-  return `rgba(${v},${a})`;
-};
-
 /* Custom cursor: a dot and a lagging ring that grows over interactive elements */
 export function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
@@ -45,7 +40,7 @@ export function Cursor() {
       if (label.current) label.current.textContent = text;
       gsap.to(r, {
         scale: target ? (text ? 2.6 : 1.8) : 1,
-        backgroundColor: target ? brandRgba(0.12) : brandRgba(0),
+        backgroundColor: target ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0)',
         duration: 0.3,
       });
       gsap.to(d, { scale: target ? 0 : 1, duration: 0.2 });
@@ -70,13 +65,13 @@ export function Cursor() {
     <>
       <div
         ref={ring}
-        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] flex h-10 w-10 items-center justify-center rounded-full border border-brand/60 opacity-0 mix-blend-difference"
+        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] flex h-10 w-10 items-center justify-center rounded-full border border-white opacity-0 mix-blend-difference"
       >
-        <span ref={label} className="text-[5px] font-semibold uppercase tracking-widest text-brand" />
+        <span ref={label} className="text-[5px] font-semibold uppercase tracking-widest text-white" />
       </div>
       <div
         ref={dot}
-        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] h-1.5 w-1.5 rounded-full bg-brand opacity-0"
+        className="custom-cursor pointer-events-none fixed left-0 top-0 z-[400] h-1.5 w-1.5 rounded-full bg-white opacity-0 mix-blend-difference"
       />
     </>
   );
@@ -219,9 +214,9 @@ export function Marquee({ items, reverse = false }: { items: string[]; reverse?:
         {row.map((item, i) => (
           <span
             key={i}
-            className="flex items-center gap-4 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-display text-lg font-medium tracking-tight text-white/85 backdrop-blur-sm sm:text-2xl"
+            className="flex items-center gap-3 whitespace-nowrap rounded-full border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-white/75 sm:text-base"
           >
-            <span className="h-2 w-2 rotate-45 bg-brand" />
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
             {item}
           </span>
         ))}
@@ -247,14 +242,15 @@ export function ScrollProgress() {
     <div className="fixed left-0 right-0 top-0 z-[60] h-[2px] bg-white/5">
       <div
         ref={bar}
-        className="h-full origin-left bg-gradient-to-r from-brand via-brand-3 to-brand-2"
+        className="h-full origin-left bg-brand"
         style={{ transform: 'scaleX(0)' }}
       />
     </div>
   );
 }
 
-/* Counter preloader that wipes away to reveal the page */
+/* Loading screen: name reveals letter by letter over a thin progress line,
+   then the screen splits open (top half up, bottom half down). */
 export function Preloader({ onDone }: { onDone: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   const count = useRef<HTMLSpanElement>(null);
@@ -266,38 +262,61 @@ export function Preloader({ onDone }: { onDone: () => void }) {
       onDone();
       return;
     }
+    const el = root.current!;
     const obj = { n: 0 };
-    const tl = gsap.timeline({
-      onComplete: () => { setGone(true); },
-    });
-    tl.to(obj, {
-      n: 100,
-      duration: 1.6,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        if (count.current) count.current.textContent = String(Math.round(obj.n)).padStart(3, '0');
-      },
-    })
-      .to('.preloader-line', { scaleX: 1, duration: 1.6, ease: 'power2.inOut' }, 0)
-      .to('.preloader-inner', { y: -40, opacity: 0, duration: 0.5, ease: 'power3.in' })
+    const q = gsap.utils.selector(el);
+    const tl = gsap.timeline({ onComplete: () => setGone(true) });
+    tl.from(q('.pl-char'), { yPercent: 110, duration: 0.9, stagger: 0.035, ease: 'expo.out' })
+      .from(q('.pl-meta'), { opacity: 0, y: 10, duration: 0.6, stagger: 0.08, ease: 'power2.out' }, 0.2)
+      .to(
+        obj,
+        {
+          n: 100,
+          duration: 1.5,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            if (count.current) count.current.textContent = `${Math.round(obj.n)}%`;
+          },
+        },
+        0.15
+      )
+      .to(q('.pl-bar'), { scaleX: 1, duration: 1.5, ease: 'power2.inOut' }, 0.15)
+      // exit: content lifts away, then the two halves part
+      .to(q('.pl-content'), { opacity: 0, y: -16, duration: 0.45, ease: 'power2.in' })
       .add(onDone)
-      .to(root.current, { clipPath: 'inset(0 0 100% 0)', duration: 0.9, ease: 'expo.inOut' }, '-=0.1');
-    return () => { tl.kill(); };
+      .to(q('.pl-top'), { yPercent: -100, duration: 1, ease: 'expo.inOut' }, '-=0.05')
+      .to(q('.pl-bottom'), { yPercent: 100, duration: 1, ease: 'expo.inOut' }, '<');
+    return () => {
+      tl.kill();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (gone) return null;
+  const name = 'Rajkumar V';
   return (
-    <div
-      ref={root}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-ink"
-      style={{ clipPath: 'inset(0 0 0% 0)' }}
-    >
-      <div className="preloader-inner w-64 text-center">
-        <p className="mb-4 text-xs uppercase tracking-[0.4em] text-white/40">Loading experience</p>
-        <span ref={count} className="font-display text-8xl text-brand">000</span>
-        <div className="mt-6 h-px w-full bg-white/10">
-          <div className="preloader-line h-full origin-left scale-x-0 bg-brand" />
+    <div ref={root} className="fixed inset-0 z-[200]" aria-label="Loading">
+      <div className="pl-top absolute inset-x-0 top-0 h-1/2 bg-[#0b0b0c]" />
+      <div className="pl-bottom absolute inset-x-0 bottom-0 h-1/2 bg-[#0b0b0c]" />
+      <div className="pl-content absolute inset-0 flex flex-col items-center justify-center px-6 text-white">
+        <h2 className="font-display text-5xl font-bold tracking-tight sm:text-7xl" aria-label={name}>
+          {name.split('').map((c, i) => (
+            <span key={i} aria-hidden="true" className="inline-block overflow-hidden align-bottom">
+              <span className="pl-char inline-block">{c === ' ' ? '\u00A0' : c}</span>
+            </span>
+          ))}
+        </h2>
+        <div className="mt-8 flex w-full max-w-xs items-center gap-4">
+          <div className="h-px flex-1 bg-white/15">
+            <div className="pl-bar h-full origin-left scale-x-0 bg-brand" />
+          </div>
+          <span ref={count} className="w-10 text-right text-sm font-medium tabular-nums text-white/70">
+            0%
+          </span>
+        </div>
+        <div className="absolute inset-x-6 bottom-6 flex justify-between text-xs font-medium uppercase tracking-[0.16em] text-white/45 sm:inset-x-10 sm:bottom-8">
+          <span className="pl-meta">Frontend Engineer</span>
+          <span className="pl-meta">Portfolio ©2026</span>
         </div>
       </div>
     </div>
@@ -343,7 +362,7 @@ export function RevealText({
           >
             <span
               className={`rw inline-block origin-bottom-left ${
-                accent ? 'font-serif-i text-gradient text-[1.08em] leading-[0.9]' : ''
+                accent ? 'text-brand' : ''
               }`}
             >
               {word}
@@ -417,10 +436,88 @@ export function SectionLabel({ index, label }: { index: string; label: string })
     return () => st.kill();
   }, []);
   return (
-    <div className="mb-8 flex items-center gap-4">
-      <span className="font-mono text-xs text-brand">{index}</span>
-      <span className="text-sm font-medium uppercase tracking-[0.3em] text-white/70">{label}</span>
-      <div ref={line} className="h-px flex-1 origin-left bg-gradient-to-r from-brand/60 to-transparent" />
+    <div className="mb-8 flex items-center gap-4 text-sm font-medium">
+      <span className="text-brand">({index})</span>
+      <span className="opacity-70">{label}</span>
+      <div ref={line} className="h-px flex-1 origin-left bg-current opacity-20" />
+    </div>
+  );
+}
+
+/* Statement paragraph whose words light up as you scroll past it */
+export function ScrubText({ text, className = '' }: { text: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReducedMotion()) return;
+    const words = el.querySelectorAll('.sw');
+    const tween = gsap.fromTo(
+      words,
+      { opacity: 0.16 },
+      {
+        opacity: 1,
+        stagger: 0.08,
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top 80%', end: 'bottom 45%', scrub: true },
+      }
+    );
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
+  }, [text]);
+  const plain = text.replace(/\*/g, '');
+  return (
+    <p ref={ref} className={className} aria-label={plain}>
+      {text.split(' ').map((w, i) => {
+        const accent = w.startsWith('*');
+        return (
+          <span key={i} aria-hidden="true" className={`sw inline-block pr-[0.25em] ${accent ? 'text-brand' : ''}`}>
+            {w.replace(/\*/g, '')}
+          </span>
+        );
+      })}
+    </p>
+  );
+}
+
+/* Two full-bleed marquee bands crossing at slight angles */
+export function BandMarquee({ items }: { items: string[] }) {
+  const a = useRef<HTMLDivElement>(null);
+  const b = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const ta = gsap.fromTo(a.current, { xPercent: 0 }, { xPercent: -50, duration: 28, ease: 'none', repeat: -1 });
+    const tb = gsap.fromTo(b.current, { xPercent: -50 }, { xPercent: 0, duration: 32, ease: 'none', repeat: -1 });
+    const st = ScrollTrigger.create({
+      onUpdate: (self) => {
+        const boost = 1 + Math.min(Math.abs(self.getVelocity()) / 300, 5);
+        gsap.timeline()
+          .to([ta, tb], { timeScale: boost * self.direction, duration: 0.25, overwrite: true })
+          .to([ta, tb], { timeScale: self.direction, duration: 1 });
+      },
+    });
+    return () => {
+      ta.kill();
+      tb.kill();
+      st.kill();
+    };
+  }, []);
+  const row = [...items, ...items, ...items, ...items];
+  const band = (ref: React.RefObject<HTMLDivElement | null>, cls: string) => (
+    <div ref={ref} className={`flex w-max items-center gap-8 py-4 sm:gap-12 sm:py-5 ${cls}`}>
+      {row.map((t, i) => (
+        <span key={i} className="flex items-center gap-8 whitespace-nowrap font-display text-3xl font-bold uppercase sm:gap-12 sm:text-5xl">
+          {t}
+          <span className="text-[0.6em]">✦</span>
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className="relative z-10 overflow-hidden py-16 sm:py-20" aria-hidden="true">
+      <div className="-rotate-[2.5deg] scale-110 bg-brand text-white">{band(a, '')}</div>
+      <div className="-mt-[2.4rem] rotate-[2deg] scale-110 bg-white text-ink sm:-mt-[3.2rem]">{band(b, '')}</div>
     </div>
   );
 }

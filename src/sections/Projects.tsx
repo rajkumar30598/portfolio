@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, ArrowUpRight, Github } from 'lucide-react';
-import { Magnetic, RevealText, SectionLabel, TiltCard } from '@/components/motion';
+import { ArrowUpRight } from 'lucide-react';
+import { RevealText, SectionLabel } from '@/components/motion';
 import { prefersReducedMotion } from '@/lib/motion';
-import { projects, type Project } from '@/data/portfolio';
+import { GITHUB, projects, type Project } from '@/data/portfolio';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -44,7 +44,7 @@ function ProjectVisual({ project }: { project: Project }) {
           src={project.image}
           alt={project.title}
           loading="lazy"
-          className="project-img h-full w-full scale-110 object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-125"
+          className="h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
       </>
@@ -80,199 +80,163 @@ function ProjectVisual({ project }: { project: Project }) {
   );
 }
 
-function ProjectCard({ project, index }: { project: Project; index: number }) {
+const featured = projects.slice(0, 3);
+const archive = projects.slice(3);
+
+function FeaturedCard({ project, index }: { project: Project; index: number }) {
   return (
-    <TiltCard className="h-full rounded-[2rem]" max={7} cursor={project.liveUrl ? 'Open' : undefined}>
-      <article className="project-card glass spotlight group flex h-full flex-col overflow-hidden rounded-[2rem] transition-colors duration-500 hover:border-brand/40">
-        <div className="relative aspect-[16/10] flex-shrink-0 overflow-hidden lg:aspect-auto lg:h-[46%]">
-          <ProjectVisual project={project} />
-          <span className="absolute left-5 top-5 z-20 rounded-full border border-white/15 bg-black/40 px-3 py-1 font-mono text-xs text-white/80 backdrop-blur-md">
-            {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
-          </span>
-          {project.liveUrl && (
-            <span className="absolute right-5 top-5 z-20 flex h-11 w-11 -translate-y-2 items-center justify-center rounded-full bg-brand text-white opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:rotate-45 group-hover:opacity-100">
-              <ArrowUpRight size={20} />
+    <article className="stack-card group relative grid overflow-hidden rounded-[2rem] border border-white/10 bg-[#141416] text-white shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.8)] sm:rounded-[2.5rem] lg:min-h-[76vh] lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="flex flex-col justify-between gap-10 p-7 sm:p-10 lg:p-14">
+        <div>
+          <div className="mb-8 flex items-center justify-between text-sm font-medium text-white/50">
+            <span>
+              ({String(index + 1).padStart(2, '0')}) — {project.company}
             </span>
-          )}
+          </div>
+          <h3 className="font-display text-5xl font-bold leading-[0.95] sm:text-6xl lg:text-7xl">{project.title.split(' – ')[0]}</h3>
+          {project.title.includes(' – ') && <p className="mt-3 text-xl text-white/60">{project.title.split(' – ')[1]}</p>}
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/70">{project.description}</p>
         </div>
-
-        <div className="flex flex-1 flex-col p-6 sm:p-8 lg:min-h-0 lg:p-7">
-          <span className="mb-2 text-xs font-medium uppercase tracking-[0.25em] text-brand">
-            {project.company}
-          </span>
-          <h3 className="mb-3 font-display text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-[2rem]">{project.title}</h3>
-          <p className="mb-5 text-[15px] leading-relaxed text-white/60 lg:line-clamp-3">{project.description}</p>
-
-          <ul className="mb-6 space-y-2 lg:hidden">
-            {project.features.slice(0, 2).map((f, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-white/50">
-                <ArrowRight size={14} className="mt-1 flex-shrink-0 text-brand" />
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-auto flex flex-wrap gap-2">
+        <div>
+          <div className="mb-8 flex flex-wrap gap-2">
             {project.tech.map((t) => (
-              <span key={t} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/70">
+              <span key={t} className="rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white/75">
                 {t}
               </span>
             ))}
           </div>
-
-          {(project.liveUrl || project.codeUrl) && (
-            <div className="mt-6 flex items-center gap-5 border-t border-white/10 pt-5 lg:mt-5 lg:pt-4">
-              {project.liveUrl && (
-                <a
-                  href={project.liveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/link flex items-center gap-2 text-sm font-medium text-brand"
-                >
-                  <span className="relative">
-                    {project.liveLabel ?? 'View project'}
-                    <span className="absolute -bottom-0.5 left-0 h-px w-full origin-right scale-x-0 bg-brand transition-transform duration-300 group-hover/link:origin-left group-hover/link:scale-x-100" />
-                  </span>
-                  <ArrowUpRight size={16} className="transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" />
-                </a>
-              )}
-              {project.codeUrl && (
-                <a
-                  href={project.codeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-white"
-                >
-                  <Github size={16} />
-                  Code
-                </a>
-              )}
-            </div>
+          {project.liveUrl && (
+            <a
+              href={project.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group/btn relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-white px-7 py-4 font-semibold text-ink"
+            >
+              <span className="absolute inset-0 translate-y-full rounded-full bg-brand transition-transform duration-500 ease-[cubic-bezier(.7,0,.2,1)] group-hover/btn:translate-y-0" />
+              <span className="relative z-10 transition-colors duration-300 group-hover/btn:text-white">{project.liveLabel ?? 'Visit'}</span>
+              <ArrowUpRight size={18} className="relative z-10 transition-all duration-300 group-hover/btn:rotate-45 group-hover/btn:text-white" />
+            </a>
           )}
         </div>
-      </article>
-    </TiltCard>
+      </div>
+      <div className="relative m-3 min-h-[320px] overflow-hidden rounded-[1.6rem] sm:m-4 sm:min-h-[420px] sm:rounded-[2rem]">
+        <ProjectVisual project={project} />
+      </div>
+    </article>
+  );
+}
+
+/** Earlier work as big rows; on desktop the row's image floats next to the cursor. */
+function ArchiveList() {
+  const listRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState<number | null>(null);
+
+  useEffect(() => {
+    const list = listRef.current;
+    const preview = previewRef.current;
+    if (!list || !preview || !window.matchMedia('(pointer: fine)').matches) return;
+    const xTo = gsap.quickTo(preview, 'x', { duration: 0.6, ease: 'power3' });
+    const yTo = gsap.quickTo(preview, 'y', { duration: 0.6, ease: 'power3' });
+    const move = (e: PointerEvent) => {
+      const b = list.getBoundingClientRect();
+      xTo(e.clientX - b.left);
+      yTo(e.clientY - b.top);
+    };
+    list.addEventListener('pointermove', move);
+    return () => list.removeEventListener('pointermove', move);
+  }, []);
+
+  return (
+    <div ref={listRef} className="relative" onPointerLeave={() => setActive(null)}>
+      <div
+        ref={previewRef}
+        className="pointer-events-none absolute left-0 top-0 z-20 hidden h-56 w-80 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl transition-[opacity,transform] duration-300 lg:block"
+        style={{ opacity: active === null ? 0 : 1, scale: active === null ? '0.8' : '1' }}
+      >
+        {archive.map((p, i) => (
+          <img
+            key={p.id}
+            src={p.image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+            style={{ opacity: active === i ? 1 : 0 }}
+          />
+        ))}
+      </div>
+      <div className="border-t border-white/10">
+        {archive.map((p, i) => (
+          <div
+            key={p.id}
+            onPointerEnter={() => setActive(i)}
+            className="group flex flex-col gap-2 border-b border-white/10 py-7 transition-colors sm:flex-row sm:items-center sm:gap-8"
+          >
+            <span className="text-sm text-white/45 sm:w-16">0{i + 4}</span>
+            <h4 className="flex-1 font-display text-3xl font-semibold text-white/85 transition-all duration-500 group-hover:translate-x-3 group-hover:text-white sm:text-4xl">
+              {p.title}
+            </h4>
+            <span className="text-sm text-white/55">{p.company}</span>
+            <span className="text-sm text-white/45 sm:w-56 sm:text-right">{p.tech.slice(0, 3).join(' · ')}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
 export function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
-  const pinRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
-    const pin = pinRef.current;
-    const track = trackRef.current;
-    if (!section || !pin || !track || prefersReducedMotion()) return;
-
-    const mm = gsap.matchMedia();
-
-    // Desktop: pin the section and scroll the cards horizontally
-    mm.add('(min-width: 1024px)', () => {
-      const distance = () => track.scrollWidth - window.innerWidth;
-      const tween = gsap.to(track, {
-        x: () => -distance(),
-        ease: 'none',
-        scrollTrigger: {
-          trigger: pin,
-          start: 'top top',
-          end: () => `+=${distance()}`,
-          pin: true,
-          scrub: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            // skew cards with scroll speed for a sense of momentum
-            const skew = gsap.utils.clamp(-8, 8, self.getVelocity() / -300);
-            gsap.to('.h-card', { skewX: skew, duration: 0.4, ease: 'power3.out', overwrite: true });
-            gsap.to('.h-card', { skewX: 0, duration: 0.8, delay: 0.25, ease: 'power3.out' });
-          },
-        },
-      });
-      // parallax the image inside each card as it crosses the screen
-      gsap.utils.toArray<HTMLElement>('.h-card').forEach((card) => {
-        const img = card.querySelector('.project-img');
-        if (!img) return;
-        gsap.fromTo(
-          img,
-          { xPercent: -6 },
-          {
-            xPercent: 6,
-            ease: 'none',
-            scrollTrigger: { trigger: card, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true },
-          }
-        );
-      });
-      gsap.to('.projects-progress', {
-        scaleX: 1,
-        ease: 'none',
-        scrollTrigger: { trigger: pin, start: 'top top', end: () => `+=${distance()}`, scrub: true },
-      });
-    });
-
-    // Mobile / tablet: stacked cards that rise in
-    mm.add('(max-width: 1023px)', () => {
-      gsap.utils.toArray<HTMLElement>('.h-card').forEach((card) => {
-        gsap.from(card, {
-          y: 80,
-          opacity: 0,
-          rotateX: -15,
-          duration: 1,
-          ease: 'expo.out',
-          scrollTrigger: { trigger: card, start: 'top 85%', once: true },
+    if (!section || prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      // each card shrinks and dims as the next one slides over it
+      const cards = gsap.utils.toArray<HTMLElement>('.stack-wrap');
+      cards.forEach((wrap, i) => {
+        const next = cards[i + 1];
+        if (!next) return;
+        gsap.to(wrap.querySelector('.stack-card'), {
+          scale: 0.92,
+          opacity: 0.45,
+          ease: 'none',
+          scrollTrigger: { trigger: next, start: 'top bottom', end: 'top 12%', scrub: true },
         });
       });
-    });
-
-    return () => mm.revert();
+    }, section);
+    return () => ctx.revert();
   }, []);
 
   return (
-    <section id="projects" ref={sectionRef} className="relative">
-      <div ref={pinRef} className="relative lg:flex lg:h-screen lg:items-center lg:overflow-hidden lg:pt-16">
-        <div
-          ref={trackRef}
-          className="grid gap-8 px-6 py-24 [perspective:1200px] md:grid-cols-2 lg:flex lg:w-max lg:items-center lg:gap-10 lg:py-0 lg:pl-[max(2.5rem,calc((100vw-80rem)/2+2.5rem))] lg:pr-[10vw]"
-        >
-          <div className="md:col-span-2 lg:w-[min(38vw,560px)] lg:flex-shrink-0 lg:pr-10">
-            <SectionLabel index="03" label="Projects" />
-            <RevealText
-              text="Featured *work*"
-              className="font-display text-5xl font-semibold leading-[1] text-white sm:text-6xl lg:text-[5.2rem]"
-            />
-            <p className="mt-6 max-w-sm text-white/50">
-              Three apps I designed, built and shipped end to end, plus earlier work from my career.
-            </p>
-            <p className="mt-10 hidden items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40 lg:flex">
-              Keep scrolling <ArrowRight size={14} className="animate-nudge text-brand" />
-            </p>
-          </div>
-
-          {projects.map((project, index) => (
-            <div key={project.id} className="h-card lg:h-[min(76vh,660px)] lg:w-[min(34vw,480px)] lg:flex-shrink-0">
-              <ProjectCard project={project} index={index} />
-            </div>
-          ))}
-          <div className="h-card flex items-center justify-center md:col-span-2 lg:w-[320px] lg:flex-shrink-0">
-            <Magnetic>
-              <a
-                href="https://github.com/rajkumar30598"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-full border border-white/15 bg-white/[0.03] text-white backdrop-blur-md transition-all duration-500 hover:scale-105 hover:border-brand hover:bg-brand hover:text-white"
-              >
-                <Github size={30} />
-                <span className="font-display text-2xl">More on GitHub</span>
-                <ArrowUpRight size={22} className="transition-transform duration-500 group-hover:rotate-45" />
-              </a>
-            </Magnetic>
-          </div>
+    <section id="projects" ref={sectionRef} className="relative z-10 bg-ink text-white">
+      <div className="mx-auto max-w-[1600px] px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pb-32 lg:pt-32">
+        <SectionLabel index="02" label="Selected work" />
+        <div className="mb-14 flex flex-wrap items-end justify-between gap-6 lg:mb-20">
+          <RevealText
+            text="Things I've *shipped*"
+            className="font-display text-5xl font-bold leading-[0.95] sm:text-7xl lg:text-[7.5rem]"
+          />
+          <p className="max-w-sm text-white/60">
+            Three apps I designed, built and launched on my own, from idea to store listing.
+          </p>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 hidden w-[min(80rem,100vw)] -translate-x-1/2 px-10 lg:block">
-          <div className="h-px w-full bg-white/10">
-            <div className="projects-progress h-full origin-left scale-x-0 bg-brand" />
+        <div className="space-y-6 lg:space-y-0">
+          {featured.map((p, i) => (
+            <div key={p.id} className="stack-wrap lg:sticky lg:pb-[6vh]" style={{ top: `calc(10vh + ${i * 28}px)` }}>
+              <FeaturedCard project={p} index={i} />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-28 lg:mt-40">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <h3 className="font-display text-4xl font-bold sm:text-5xl">Earlier work</h3>
+            <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 text-sm font-medium text-white/60 hover:text-white">
+              More on GitHub <ArrowUpRight size={16} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </a>
           </div>
+          <ArchiveList />
         </div>
       </div>
     </section>

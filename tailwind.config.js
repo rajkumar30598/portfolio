@@ -11,6 +11,7 @@ module.exports = {
           3: "rgb(var(--brand-3) / <alpha-value>)",
         },
         ink: "rgb(var(--ink) / <alpha-value>)",
+        paper: "#121216",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

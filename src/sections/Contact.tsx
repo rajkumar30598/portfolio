@@ -1,183 +1,85 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowUpRight, Github, Linkedin, Mail, MapPin, Phone, Send } from 'lucide-react';
-import { toast } from 'sonner';
-import { Magnetic, RevealText, SectionLabel } from '@/components/motion';
+import { ArrowUpRight } from 'lucide-react';
+import { Magnetic, SectionLabel } from '@/components/motion';
 import { prefersReducedMotion } from '@/lib/motion';
+import { EMAIL, GITHUB, LINKEDIN, PHONE } from '@/data/portfolio';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const EMAIL = 'rajkumar30598@gmail.com';
-
-const contacts = [
-  { icon: Mail, label: 'Email', value: EMAIL, href: `mailto:${EMAIL}` },
-  { icon: Phone, label: 'Phone', value: '+91-97894-54245', href: 'tel:+919789454245' },
-  { icon: MapPin, label: 'Location', value: 'Bangalore, India' },
-];
-
-const fieldClass =
-  'peer w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 pb-3 pt-7 text-white outline-none transition-all duration-300 placeholder:text-transparent focus:border-brand focus:bg-white/[0.06] focus:shadow-[0_0_0_4px_rgb(var(--brand)/0.12)]';
-const labelClass =
-  'pointer-events-none absolute left-5 top-5 text-white/40 transition-all duration-300 peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-brand peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs';
-
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [form, setForm] = useState({ name: '', email: '', message: '' });
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section || prefersReducedMotion()) return;
     const ctx = gsap.context(() => {
-      gsap.from('.contact-item', {
-        x: -60,
-        opacity: 0,
-        duration: 1,
+      gsap.from('.cta-line', {
+        yPercent: 110,
+        duration: 1.3,
         stagger: 0.1,
         ease: 'expo.out',
-        scrollTrigger: { trigger: '.contact-items', start: 'top 85%', once: true },
+        scrollTrigger: { trigger: section, start: 'top 70%', once: true },
       });
-      gsap.from('.contact-form', {
-        y: 80,
-        rotateX: -12,
+      gsap.from('.cta-fade', {
+        y: 30,
         opacity: 0,
-        duration: 1.3,
+        duration: 1,
+        stagger: 0.08,
         ease: 'expo.out',
-        scrollTrigger: { trigger: '.contact-form', start: 'top 85%', once: true },
+        scrollTrigger: { trigger: section, start: 'top 55%', once: true },
       });
-      gsap.fromTo(
-        '.contact-giant',
-        { xPercent: 10 },
-        {
-          xPercent: -30,
-          ease: 'none',
-          scrollTrigger: { trigger: section, start: 'top bottom', end: 'bottom top', scrub: true },
-        }
-      );
     }, section);
     return () => ctx.revert();
   }, []);
 
-  // Opens the visitor's mail app with the message filled in, so it really reaches the inbox.
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const subject = `Portfolio enquiry from ${form.name}`;
-    const body = `${form.message}\n\n— ${form.name} (${form.email})`;
-    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    toast.success('Opening your email app with the message ready to send.');
-  };
-
-  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-
   return (
-    <section id="contact" ref={sectionRef} className="relative overflow-hidden py-24 sm:py-32 lg:py-40">
-      <div
-        aria-hidden="true"
-        className="contact-giant pointer-events-none absolute left-0 top-10 whitespace-nowrap font-display text-[15vw] font-semibold leading-none text-transparent [-webkit-text-stroke:1px_rgb(var(--brand)/0.15)]"
-      >
-        Let's talk · Let's build · Let's talk ·
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10">
+    <section id="contact" ref={sectionRef} className="relative z-10 bg-ink text-white">
+      <div className="mx-auto max-w-[1600px] px-5 pb-16 pt-24 sm:px-8 lg:px-12 lg:pt-32">
         <SectionLabel index="04" label="Contact" />
-        <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
-          <div>
-            <RevealText
-              text="Let's work *together.*"
-              className="font-display text-5xl font-semibold leading-[1.02] text-white sm:text-6xl lg:text-7xl"
-            />
-            <p className="mt-6 max-w-md text-lg leading-relaxed text-white/60">
-              Have a project in mind or just want to chat? I'm always open to discussing new opportunities and
-              interesting ideas.
-            </p>
 
-            <div className="contact-items mt-12 space-y-4">
-              {contacts.map(({ icon: Icon, label, value, href }) => {
-                const inner = (
-                  <>
-                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-brand/20 bg-brand/10 text-brand transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:bg-brand group-hover:text-white">
-                      <Icon size={22} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm text-white/45">{label}</span>
-                      <span className="block truncate text-lg text-white transition-colors group-hover:text-brand">
-                        {value}
-                      </span>
-                    </span>
-                    {href && (
-                      <ArrowUpRight
-                        size={20}
-                        className="text-white/30 transition-all duration-500 group-hover:rotate-45 group-hover:text-brand"
-                      />
-                    )}
-                  </>
-                );
-                const cls =
-                  'contact-item glass spotlight group flex items-center gap-5 rounded-3xl p-4 pr-6 transition-colors duration-500 hover:border-brand/40';
-                return href ? (
-                  <a key={label} href={href} className={cls}>
-                    {inner}
-                  </a>
-                ) : (
-                  <div key={label} className={cls}>
-                    {inner}
-                  </div>
-                );
-              })}
-            </div>
+        <h2 className="font-display font-bold leading-[0.95] tracking-tight">
+          <span className="block overflow-hidden">
+            <span className="cta-line block text-[13vw] sm:text-[8vw] min-[1600px]:text-[8rem]">Let's work</span>
+          </span>
+          <span className="block overflow-hidden">
+            <span className="cta-line block text-[13vw] text-brand sm:text-[8vw] min-[1600px]:text-[8rem]">together.</span>
+          </span>
+        </h2>
 
-            <div className="contact-item mt-8 flex gap-3">
-              {[
-                { href: 'https://www.linkedin.com/in/rajkumar-v-b11282225/', label: 'LinkedIn', icon: Linkedin },
-                { href: 'https://github.com/rajkumar30598', label: 'GitHub', icon: Github },
-              ].map(({ href, label, icon: Icon }) => (
-                <Magnetic key={label} strength={0.5}>
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/70 backdrop-blur-md transition-all duration-300 hover:border-brand hover:bg-brand hover:text-white"
-                  >
-                    <Icon size={20} />
-                  </a>
-                </Magnetic>
-              ))}
+        <div className="mt-14 grid gap-12 border-t border-white/10 pt-10 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="cta-fade space-y-6">
+            <a href={`mailto:${EMAIL}`} className="group inline-flex items-center gap-3 font-display text-2xl font-semibold text-white/90 hover:text-white sm:text-4xl">
+              <span className="relative">
+                {EMAIL}
+                <span className="absolute -bottom-1 left-0 h-[2px] w-full origin-right scale-x-0 bg-brand transition-transform duration-500 group-hover:origin-left group-hover:scale-x-100" />
+              </span>
+              <ArrowUpRight className="h-7 w-7 text-brand transition-transform duration-500 group-hover:rotate-45" />
+            </a>
+            <div className="flex flex-wrap gap-x-8 gap-y-3 text-base font-medium text-white/60">
+              <a href={PHONE.href} className="transition-colors hover:text-white">
+                {PHONE.label}
+              </a>
+              <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-1 hover:text-white">
+                LinkedIn <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </a>
+              <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-1 hover:text-white">
+                GitHub <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </a>
+              <span className="text-white/40">Bangalore, India</span>
             </div>
           </div>
-
-          <div style={{ perspective: '1200px' }}>
-            <form
-              onSubmit={handleSubmit}
-              className="contact-form glass spotlight relative space-y-5 overflow-hidden rounded-[2rem] p-6 sm:p-10"
-            >
-              <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-brand/20 blur-[90px]" />
-              <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-brand-2/25 blur-[90px]" />
-              <h3 className="relative font-display text-4xl text-white">Send a message</h3>
-              <div className="relative">
-                <input id="name" name="name" placeholder="Name" required value={form.name} onChange={onChange} className={fieldClass} />
-                <label htmlFor="name" className={labelClass}>Your name</label>
-              </div>
-              <div className="relative">
-                <input id="email" name="email" type="email" placeholder="Email" required value={form.email} onChange={onChange} className={fieldClass} />
-                <label htmlFor="email" className={labelClass}>Your email</label>
-              </div>
-              <div className="relative">
-                <textarea id="message" name="message" rows={5} placeholder="Message" required value={form.message} onChange={onChange} className={`${fieldClass} resize-none`} />
-                <label htmlFor="message" className={labelClass}>Tell me about your project…</label>
-              </div>
-              <button
-                type="submit"
-                className="group relative w-full overflow-hidden rounded-2xl bg-brand py-5 font-medium text-white"
+          <div className="cta-fade">
+            <Magnetic strength={0.4}>
+              <a
+                href={`mailto:${EMAIL}?subject=${encodeURIComponent('Hello Rajkumar')}`}
+                className="group relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-full bg-brand text-lg font-semibold text-white sm:h-44 sm:w-44"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  Send message
-                  <Send size={18} className="transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:rotate-12" />
-                </span>
-                <span className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 ease-out group-hover:translate-x-0" />
-              </button>
-            </form>
+                <span className="absolute inset-0 translate-y-full rounded-full bg-white transition-transform duration-500 ease-[cubic-bezier(.7,0,.2,1)] group-hover:translate-y-0" />
+                <span className="relative z-10 transition-colors duration-300 group-hover:text-ink">Get in touch</span>
+              </a>
+            </Magnetic>
           </div>
         </div>
       </div>
