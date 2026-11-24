@@ -60,7 +60,7 @@ export function Experience() {
         <SectionLabel index="02" label="Experience" />
         <RevealText
           text="My professional *journey*"
-          className="mb-16 font-display text-5xl leading-[0.95] text-white sm:text-6xl lg:mb-24 lg:text-8xl"
+          className="mb-16 font-display text-4xl font-semibold leading-[1.05] text-white sm:text-5xl lg:mb-24 lg:text-7xl"
         />
 
         <div className="xp-list relative">
@@ -94,7 +94,7 @@ export function Experience() {
                           {exp.period}
                         </span>
                       </div>
-                      <h3 className="mb-1 font-display text-4xl text-white transition-colors group-hover:text-brand sm:text-5xl">
+                      <h3 className="mb-1 font-display text-3xl font-semibold text-white transition-colors group-hover:text-brand sm:text-4xl">
                         {exp.company}
                       </h3>
                       <p className="mb-4 flex items-center gap-2 text-sm text-white/45">

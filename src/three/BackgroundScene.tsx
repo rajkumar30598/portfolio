@@ -14,8 +14,6 @@ import { getTheme, type Rgb } from '@/lib/theme';
 const raw = (c: Rgb, out = new THREE.Color()) => out.setRGB(c[0] / 255, c[1] / 255, c[2] / 255);
 const t0 = getTheme();
 const palette = { a: raw(t0.brand), b: raw(t0.brand2), c: raw(t0.brand3) };
-const inkColor = new THREE.Color().setRGB(t0.ink[0] / 255, t0.ink[1] / 255, t0.ink[2] / 255, THREE.SRGBColorSpace);
-const tmp = new THREE.Color();
 
 /* ---------- deterministic random so shapes are identical every render ---------- */
 function rng(seed: number) {
@@ -240,16 +238,9 @@ function ParticleSculpture({ isMobile }: { isMobile: boolean }) {
   );
 }
 
-/** Eases colours toward the active theme and decays the click pulse. */
-function ThemeSync() {
-  useFrame(({ scene }, delta) => {
-    const t = getTheme();
-    const k = 1 - Math.exp(-4 * delta);
-    palette.a.lerp(raw(t.brand, tmp), k);
-    palette.b.lerp(raw(t.brand2, tmp), k);
-    palette.c.lerp(raw(t.brand3, tmp), k);
-    inkColor.lerp(tmp.setRGB(t.ink[0] / 255, t.ink[1] / 255, t.ink[2] / 255, THREE.SRGBColorSpace), k);
-    scene.background = inkColor;
+/** Decays the click pulse that makes the sculpture burst. */
+function PulseDecay() {
+  useFrame((_, delta) => {
     motion.pulse = Math.max(0, motion.pulse - delta * 0.7);
   });
   return null;
@@ -273,15 +264,15 @@ export default function BackgroundScene() {
       <Canvas
         camera={{ position: [0, 0, 7], fov: 45 }}
         dpr={[1, isMobile ? 1.5 : 2]}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
         frameloop={reduced ? 'demand' : 'always'}
       >
         <ParticleSculpture isMobile={isMobile} />
         <CameraRig />
-        <ThemeSync />
+        <PulseDecay />
       </Canvas>
       {/* vignette + grain keep text readable over the scene */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgb(var(--ink)/0.45)_70%,rgb(var(--ink)/0.9)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgb(var(--ink)/0.25)_70%,rgb(var(--ink)/0.75)_100%)]" />
       <div className="noise-overlay absolute inset-0" />
     </div>
   );

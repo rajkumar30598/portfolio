@@ -95,10 +95,10 @@ export function Hero({ ready }: { ready: boolean }) {
           <span className="text-xs uppercase tracking-[0.25em] text-white/70">SDE 2 · Neutrinos · Bangalore</span>
         </div>
 
-        <h1 className="whitespace-nowrap font-display text-[17vw] leading-[0.85] text-white [perspective:800px] sm:text-[15vw] lg:text-[11.5rem] xl:text-[13rem]">
-          <SplitChars text="RAJKUMAR" />
+        <h1 className="whitespace-nowrap font-display text-[13.5vw] font-semibold leading-[0.95] text-white [perspective:800px] sm:text-[11vw] lg:text-[8rem] xl:text-[9rem]">
+          <SplitChars text="Rajkumar" className="[&_.hero-char]:bg-gradient-to-b [&_.hero-char]:from-white [&_.hero-char]:via-white [&_.hero-char]:to-[#8fb8ff] [&_.hero-char]:bg-clip-text [&_.hero-char]:text-transparent" />
           <span className="inline-block w-[0.22em]" aria-hidden="true" />
-          <SplitChars text="V" className="text-brand" />
+          <SplitChars text="V" className="[&_.hero-char]:bg-gradient-to-b [&_.hero-char]:from-[#d6ecff] [&_.hero-char]:to-brand [&_.hero-char]:bg-clip-text [&_.hero-char]:text-transparent" />
         </h1>
 
         <div className="mt-8 flex max-w-2xl flex-col gap-10">

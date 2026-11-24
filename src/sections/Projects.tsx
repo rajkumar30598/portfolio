@@ -100,7 +100,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <span className="mb-2 text-xs font-medium uppercase tracking-[0.25em] text-brand">
             {project.company}
           </span>
-          <h3 className="mb-3 font-display text-4xl leading-none text-white sm:text-5xl lg:text-[2.6rem]">{project.title}</h3>
+          <h3 className="mb-3 font-display text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-[2rem]">{project.title}</h3>
           <p className="mb-5 text-[15px] leading-relaxed text-white/60 lg:line-clamp-3">{project.description}</p>
 
           <ul className="mb-6 space-y-2 lg:hidden">
@@ -238,7 +238,7 @@ export function Projects() {
             <SectionLabel index="03" label="Projects" />
             <RevealText
               text="Featured *work*"
-              className="font-display text-6xl leading-[0.9] text-white sm:text-7xl lg:text-[9rem]"
+              className="font-display text-5xl font-semibold leading-[1] text-white sm:text-6xl lg:text-[5.2rem]"
             />
             <p className="mt-6 max-w-sm text-white/50">
               Three apps I designed, built and shipped end to end, plus earlier work from my career.

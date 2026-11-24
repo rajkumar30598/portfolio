@@ -59,7 +59,11 @@ export function Navigation() {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-50">
+      <nav
+        className={`fixed left-0 right-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-500 ${
+          isScrolled ? 'border-b border-white/[0.06] bg-ink/60 backdrop-blur-2xl' : 'border-b border-transparent'
+        }`}
+      >
         <div
           className={`mx-auto flex max-w-7xl items-center justify-between px-6 transition-all duration-500 lg:px-10 ${
             isScrolled ? 'h-16' : 'h-24'
@@ -150,7 +154,7 @@ export function Navigation() {
                 e.preventDefault();
                 scrollToSection(link.href);
               }}
-              className="flex items-baseline gap-4 font-display text-6xl text-white transition-all duration-500 hover:text-brand"
+              className="flex items-baseline gap-4 font-display text-5xl font-semibold text-white transition-all duration-500 hover:text-brand"
               style={{
                 transitionDelay: isMobileMenuOpen ? `${150 + index * 70}ms` : '0ms',
                 opacity: isMobileMenuOpen ? 1 : 0,

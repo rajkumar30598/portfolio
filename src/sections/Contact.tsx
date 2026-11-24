@@ -74,7 +74,7 @@ export function Contact() {
     <section id="contact" ref={sectionRef} className="relative overflow-hidden py-24 sm:py-32 lg:py-40">
       <div
         aria-hidden="true"
-        className="contact-giant pointer-events-none absolute left-0 top-10 whitespace-nowrap font-display text-[22vw] leading-none text-transparent [-webkit-text-stroke:1px_rgb(var(--brand)/0.15)]"
+        className="contact-giant pointer-events-none absolute left-0 top-10 whitespace-nowrap font-display text-[15vw] font-semibold leading-none text-transparent [-webkit-text-stroke:1px_rgb(var(--brand)/0.15)]"
       >
         Let's talk · Let's build · Let's talk ·
       </div>
@@ -85,7 +85,7 @@ export function Contact() {
           <div>
             <RevealText
               text="Let's work *together.*"
-              className="font-display text-6xl leading-[0.9] text-white sm:text-7xl lg:text-8xl"
+              className="font-display text-5xl font-semibold leading-[1.02] text-white sm:text-6xl lg:text-7xl"
             />
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/60">
               Have a project in mind or just want to chat? I'm always open to discussing new opportunities and

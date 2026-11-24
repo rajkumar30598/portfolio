@@ -151,7 +151,7 @@ export function Footer() {
         {/* Giant name */}
         <p
           aria-hidden="true"
-          className="footer-animate mb-8 select-none bg-gradient-to-b from-white/15 to-transparent bg-clip-text text-center font-display text-[18vw] leading-[0.8] text-transparent lg:text-[14rem]"
+          className="footer-animate mb-8 select-none bg-gradient-to-b from-white/15 to-transparent bg-clip-text text-center font-display text-[12vw] font-semibold leading-[0.9] text-transparent lg:text-[10rem]"
         >
           RAJKUMAR V
         </p>

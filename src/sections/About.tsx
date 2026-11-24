@@ -93,7 +93,7 @@ export function About() {
           <div className="flex flex-col justify-center">
             <RevealText
               text="Passionate about building things that *matter.*"
-              className="font-display text-5xl leading-[0.95] text-white sm:text-6xl lg:text-7xl"
+              className="font-display text-4xl font-semibold leading-[1.05] text-white sm:text-5xl lg:text-6xl"
             />
             <div className="mt-10 space-y-6">
               <p className="about-para text-lg leading-relaxed text-white/65">
@@ -129,7 +129,7 @@ export function About() {
           >
             <CountUp
               value={s.value}
-              className="block font-display text-6xl text-brand transition-transform duration-500 group-hover:scale-110 sm:text-7xl"
+              className="block font-display text-5xl font-semibold text-gradient transition-transform duration-500 group-hover:scale-110 sm:text-6xl"
             />
             <p className="mt-2 text-sm text-white/50">{s.label}</p>
           </div>

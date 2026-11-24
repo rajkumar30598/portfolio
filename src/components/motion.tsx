@@ -219,7 +219,7 @@ export function Marquee({ items, reverse = false }: { items: string[]; reverse?:
         {row.map((item, i) => (
           <span
             key={i}
-            className="flex items-center gap-4 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-display text-2xl tracking-wide text-white/80 backdrop-blur-sm sm:text-3xl"
+            className="flex items-center gap-4 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 font-display text-lg font-medium tracking-tight text-white/85 backdrop-blur-sm sm:text-2xl"
           >
             <span className="h-2 w-2 rotate-45 bg-brand" />
             {item}
